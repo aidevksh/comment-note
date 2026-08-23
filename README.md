@@ -188,4 +188,27 @@ comment-note/
 
 ## 라이선스
 
-[MIT](LICENSE)
+이 저장소의 코드는 [MIT](LICENSE). 가져다 붙인 외부 코드는 없다.
+
+의존성은 CI에서 [`cargo-deny`](deny.toml)로 검사한다.
+GPL / AGPL / LGPL 처럼 앱 전체에 소스 공개 의무를 옮기는 라이선스가 섞이면 빌드가 실패한다.
+
+윈도우 빌드에 들어가는 크레이트 392개 기준:
+
+| 계열 | 개수 |
+|---|---|
+| MIT / Apache-2.0 (선택 가능한 조합 포함) | 337 |
+| Unicode-3.0 · Zlib · BSD · ISC · 0BSD 등 허용 계열 | 49 |
+| MPL-2.0 (파일 단위 약한 copyleft) | 5 |
+| **GPL / AGPL / LGPL** | **0** |
+
+MPL-2.0인 다섯 개(`cssparser`, `cssparser-macros`, `selectors`, `dtoa-short`, `option-ext`)는
+링크만 하면 내 소스를 공개할 의무가 없다. 그 파일을 고쳐 배포할 때만 고친 파일에 공개 의무가 생긴다.
+
+그 밖에:
+
+- **폰트** IBM Plex Sans KR / IBM Plex Mono — SIL OFL 1.1. 지금은 Google Fonts에서 받아 쓴다.
+  앱에 번들해도 되고, 폰트 자체를 고쳐 재배포할 때만 조건이 붙는다.
+- **WebView2 런타임** — 마이크로소프트 재배포 조건. 설치 파일이 부트스트래퍼를 받아 온다.
+- **NSIS** (설치 파일 생성 도구) — zlib 라이선스.
+- [ ] 배포 바이너리에 제3자 저작권 고지 넣기 — MIT/BSD는 고지문 포함이 조건이다. 아직 안 했다.
