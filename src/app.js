@@ -2,7 +2,7 @@
 "use strict";
 
 /* =============================================================
-   Comment Note — 시안
+   Comment Note — 편집기 본체
    주석 모델: 마크다운 원문의 문자 오프셋 [start, end).
    원문 패널에서는 DOM 안의 span 이 사실상의 위치이고, 렌더할 때마다
    오프셋을 다시 읽어 온다. 미리보기와 위지윅은 그 오프셋을 마크다운
@@ -21,231 +21,13 @@ var RE_ANY  = new RegExp("[" + M_OPEN + M_SEP + M_END + "]", "g");
 /* 줄머리의 블록 기호 — 주석 경계는 이 뒤로 밀어 넣는다 */
 var RE_LEAD = /^[ \t]*(?:>[ \t]?)*(?:[-*+][ \t]+|\d+[.)][ \t]+|#{1,6}[ \t]+)?/;
 
-/* ── 샘플 노트에서 쓰는 이미지 ───────────────────────────────── */
-var LAYOUT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="700" height="212" viewBox="0 0 700 212">'
- + '<rect width="700" height="212" fill="rgb(247,245,242)"/>'
- + '<g font-family="IBM Plex Sans KR, sans-serif" fill="rgb(40,38,35)">'
- + '<rect x="24" y="22" width="316" height="130" rx="8" fill="rgb(255,255,255)" stroke="rgb(214,209,201)"/>'
- + '<text x="40" y="48" font-size="13" font-weight="600">마크다운 원문</text>'
- + '<rect x="40" y="62" width="284" height="9" rx="4" fill="rgb(232,228,221)"/>'
- + '<rect x="40" y="80" width="150" height="9" rx="4" fill="rgb(201,138,43)" opacity="0.45"/>'
- + '<rect x="40" y="98" width="240" height="9" rx="4" fill="rgb(232,228,221)"/>'
- + '<rect x="40" y="116" width="196" height="9" rx="4" fill="rgb(232,228,221)"/>'
- + '<rect x="360" y="22" width="316" height="130" rx="8" fill="rgb(255,255,255)" stroke="rgb(214,209,201)"/>'
- + '<text x="376" y="48" font-size="13" font-weight="600">미리보기</text>'
- + '<rect x="376" y="60" width="150" height="14" rx="4" fill="rgb(224,219,211)"/>'
- + '<rect x="376" y="84" width="284" height="8" rx="4" fill="rgb(235,231,225)"/>'
- + '<rect x="376" y="100" width="150" height="8" rx="4" fill="rgb(201,138,43)" opacity="0.45"/>'
- + '<rect x="376" y="116" width="228" height="8" rx="4" fill="rgb(235,231,225)"/>'
- + '<path d="M196 89 L196 100 L452 100 L452 96" stroke="rgb(201,138,43)" stroke-opacity="0.6" fill="none" stroke-dasharray="3 3"/>'
- + '<rect x="24" y="166" width="652" height="28" rx="8" fill="rgb(255,255,255)" stroke="rgb(201,138,43)" stroke-opacity="0.5"/>'
- + '<text x="40" y="185" font-size="12" fill="rgb(150,101,25)">주석 패널 — 같은 구간이 양쪽 패널에서 같은 번호로 잡힌다</text>'
- + '</g></svg>';
-var ASSETS = { "img/layout.svg":"data:image/svg+xml," + encodeURIComponent(LAYOUT_SVG) };
-
-/* ── 샘플 노트 ───────────────────────────────────────────────── */
-var NOTES = [
-  {
-    id:"n1", title:"기획 메모", file:"기획 메모.md", date:"08-23",
-    src:[
-"# Comment Note 기획",
-"",
-"윈도우용 메모장. 마크다운으로 쓰고 옆에서 바로 결과를 본다.",
-"핵심은 **주석**이다. 내가 쓴 글의 특정 구간에 메모를 붙여 둘 수 있다.",
-"",
-"![편집 화면 구조](img/layout.svg)",
-"",
-"## 왜 만드나",
-"",
-"기존 메모장은 고쳐야 할 것을 본문 안에 섞어 적게 만든다.",
-"며칠 뒤에 열어 보면 본문인지 나에게 남긴 말인지 구분이 안 된다.",
-"주석은 본문을 건드리지 않고 옆에 쌓인다.",
-"",
-"## 이번 버전 범위",
-"",
-"- 마크다운 편집 + 실시간 미리보기",
-"- 위지윅 편집 전환",
-"- 이미지 붙여넣기, 드래그 앤 드롭",
-"- 구간 선택 후 우클릭으로 주석 달기",
-"- 라이트 / 다크 / 시스템 테마",
-"",
-"편집 방식은 이 둘만 둔다. 미리보기만 보는 모드는 필요 없다.",
-"넘긴 것: 맥 지원, 다른 문서 형식 가져오기, 노트 동기화.",
-"",
-"## 주석을 파일에 어떻게 남기나",
-"",
-"본문과 주석을 한 파일에 담되 주석은 문서 끝 블록에 모아 둔다.",
-"이 앱이 없어도 파일이 그냥 읽히는 게 중요하다.",
-"",
-"```json",
-'{ "anchor": "p7:12-38", "body": "근거가 약함", "at": "2026-08-23 14:02" }',
-"```",
-"",
-"> 위치를 파일 전체 문자 오프셋으로 잡으면 앞부분을 고칠 때마다 밀린다.",
-"> 문단 id에 오프셋을 붙이는 방식으로 가야 한다.",
-"",
-"## 저장 위치와 폴더",
-"",
-"메모를 어디 둘지는 사용자가 정한다. 앱은 폴더 하나를 열고 그 안의 `.md` 파일을 그대로 다룬다.",
-"내 파일이 내 폴더에 남는 게 원칙이다. 앱을 지워도 메모는 남아야 한다.",
-"",
-"- 설정은 `%APPDATA%\\CommentNote\\config.json`",
-"- exe 옆에 `config.json` 이 있으면 그것을 먼저 읽는다 (USB에 넣어 쓰는 경우)",
-"- 폴더 안에서 파일이 바뀌면 감시해서 목록을 갱신한다",
-"- 파일 이름에 못 쓰는 문자와 예약된 이름(CON, PRN, NUL 등)을 걸러야 한다",
-"",
-"## 스택",
-"",
-"주석은 본문 위에 겹치는 표시라서 편집기 코어는 웹 쪽(ProseMirror 계열)을 쓴다.",
-"셸은 Tauri. 설치 파일이 10MB 아래로 떨어지고 상주 메모리도 낮다.",
-"메모장인데 설치 파일이 100MB를 넘는 건 앞뒤가 안 맞는다.",
-"",
-"## 단축키",
-"",
-"| 동작 | 단축키 |",
-"| --- | --- |",
-"| 주석 달기 | Ctrl+Alt+M |",
-"| 편집 방식 전환 | Ctrl+Alt+P |",
-"| 테마 전환 | Ctrl+Alt+T |",
-"| 노트 목록 | Ctrl+Alt+B |",
-"| 새 노트 | Ctrl+N |",
-"| 저장 위치 바꾸기 | Ctrl+Shift+O |",
-"| 저장 | Ctrl+S |"
-    ].join("\n"),
-    annos:[
-      {id:"a1", find:"고쳐야 할 것을 본문 안에 섞어",
-       comment:"이 문장이 이 앱의 이유다. 첫 화면 소개 문구로 그대로 써도 될 것 같다.", at:"오늘 14:02"},
-      {id:"a2", find:"위지윅 편집 전환",
-       comment:"주석이 위지윅에서도 같은 구간에 잡히는지가 관문. 여기서 깨지면 릴리스에서 뺀다.", at:"오늘 14:06"},
-      {id:"a3", find:"문단 id에 오프셋을 붙이는 방식",
-       comment:"id 부여 규칙을 정해야 함. 문단 내용 해시로 하면 고칠 때 깨지고, 증가 카운터는 파일을 손으로 고칠 때 꼬인다.", at:"오늘 14:11"},
-      {id:"a4", find:"**주석**이다. 내가 쓴 글의 특정 구간에",
-       comment:"굵게 표시가 섞인 구간에 걸쳐 달아도 미리보기와 위지윅에서 같은 구간으로 잡히는지 확인용.", at:"오늘 14:20"}
-    ]
-  },
-  {
-    id:"n2", title:"주간 회의 08-21", file:"주간 회의 08-21.md", date:"08-21",
-    src:[
-"# 주간 회의 · 8월 21일",
-"",
-"참석: 나, 디자인, QA",
-"",
-"## 결정",
-"",
-"1. 첫 배포는 윈도우 단독 실행 파일 하나로.",
-"2. 자동 업데이트는 다음 버전으로 미룬다.",
-"3. 주석 색은 본문 강조색과 겹치지 않게 따로 둔다.",
-"",
-"## 일정",
-"",
-"| 단계 | 담당 | 마감 |",
-"| --- | --- | --- |",
-"| 편집기 기본 | 나 | 08-27 |",
-"| 주석 저장 형식 | 나 | 08-30 |",
-"| 테마 정리 | 디자인 | 09-02 |",
-"| 첫 테스트 빌드 | QA | 09-05 |",
-"",
-"## 남은 질문",
-"",
-"- 주석을 해결 처리하면 목록에서 감출까, 회색으로 남길까",
-"- 한 구간에 주석 두 개가 겹치면 어떻게 보여줄까"
-    ].join("\n"),
-    annos:[
-      {id:"b1", find:"주석 저장 형식 | 나 | 08-30",
-       comment:"QA 테스트 준비와 겹친다. 27일로 당기거나 편집기 기본을 하루 미루자.", at:"어제 09:40"},
-      {id:"b2", find:"한 구간에 주석 두 개가 겹치면",
-       comment:"겹친 구간은 색을 진하게 하고 hover 시 카드를 두 장 쌓아 보여주는 쪽으로.", at:"어제 09:52"}
-    ]
-  },
-  {
-    id:"n3", title:"참고할 것들", file:"참고할 것들.md", date:"08-19",
-    src:[
-"# 참고할 것들",
-"",
-"## 주석이 잘 된 도구",
-"",
-"- 문서 편집기의 댓글: 구간 선택 후 옆에 카드. 카드가 본문을 밀어내지 않는 게 좋다.",
-"- 코드 리뷰 도구: 줄 단위로만 달려서 문장 중간을 못 짚는다. 우리는 문자 단위로.",
-"- PDF 주석: 하이라이트 색이 여러 개. 색으로 종류를 나누는 건 나중에.",
-"",
-"## 확인할 것",
-"",
-"- 긴 문서에서 주석 200개일 때 목록이 버티는지",
-"- `contenteditable` 위에서 하이라이트가 편집을 방해하지 않는지",
-"- 이미지 붙여넣기를 어디에 저장할지. 파일 옆 폴더 vs 파일 안에 base64",
-"",
-"---",
-"",
-"쓰다 보니 결국 이 앱을 이 앱으로 기획하고 있다."
-    ].join("\n"),
-    annos:[]
-  },
-  {
-    id:"n4", title:"오늘 할 일", file:"오늘 할 일.md", date:"08-23",
-    src:[
-"# 오늘 할 일",
-"",
-"- 주석 저장 형식 초안 쓰기",
-"- Tauri 프로젝트 껍데기 만들고 폴더 열기까지",
-"- 파일 감시 붙였을 때 OneDrive 폴더에서 이벤트가 두 번 오는지 확인",
-"",
-"밤에: 설치 파일 크기 재보기."
-    ].join("\n"),
-    annos:[
-      {id:"d1", find:"OneDrive 폴더에서 이벤트가 두 번 오는지",
-       comment:"동기화 폴더는 저장 한 번에 변경 이벤트가 여러 번 온다. 디바운스 없으면 목록이 깜빡인다.", at:"오늘 09:12"}
-    ]
-  },
-  {
-    id:"n5", title:"상반기 회고", file:"상반기 회고.md", date:"07-02",
-    src:[
-"# 상반기 회고",
-"",
-"만들다 만 것이 세 개. 끝까지 간 것이 하나.",
-"차이는 실력이 아니라 범위를 줄였는지였다.",
-"",
-"이번 메모장은 주석 하나만 제대로 하고 나머지는 다 미룬다."
-    ].join("\n"),
-    annos:[]
-  },
-  {
-    id:"n6", title:"배포 메모", file:"배포 메모.md", date:"06-18",
-    src:[
-"# 배포 메모",
-"",
-"서명 없는 exe 는 SmartScreen 경고가 뜬다. 코드 서명 인증서 값 확인 필요.",
-"",
-"```",
-"cargo tauri build",
-"target/release/bundle/nsis/*.exe",
-"```",
-"",
-"portable 빌드는 exe 하나만 던져 주면 되는지 실제로 다른 PC 에서 확인."
-    ].join("\n"),
-    annos:[
-      {id:"e1", find:"코드 서명 인증서 값 확인 필요",
-       comment:"개인 개발자용 인증서는 연 20만원대. 첫 배포는 경고를 안고 가고 사용자 수 보고 결정.", at:"6월 18일"}
-    ]
-  }
-];
-
-/* 저장 위치 (사용자가 고른 폴더) 와 그 안의 트리 */
-var LOCATIONS = ["D:\\Notes\\메모", "C:\\Users\\kimsh\\OneDrive\\메모", "C:\\Users\\kimsh\\Documents\\CommentNote"];
-var curLoc = LOCATIONS[0];
-var TREE = [
-  {type:"dir", name:"기획", open:true, children:[
-    {type:"file", note:"n1"},
-    {type:"file", note:"n3"}
-  ]},
-  {type:"dir", name:"회의", open:true, children:[
-    {type:"file", note:"n2"}
-  ]},
-  {type:"dir", name:"보관", open:false, children:[
-    {type:"file", note:"n5"},
-    {type:"file", note:"n6"}
-  ]},
-  {type:"file", note:"n4"}
-];
+/* ── 상태: 열어 둔 폴더와 그 안의 노트 ────────────────────────
+   앱은 사용자가 고른 폴더 하나만 다룬다. 처음 실행하면 아무것도 없다.
+   실제 파일 읽기/쓰기는 bridge.js 가 채운다. */
+var NOTES = [];        /* {id, title, file, path, dir, src, annos:[]} */
+var TREE = [];         /* {type:"dir", name, path, open, children} | {type:"file", note} */
+var LOCATIONS = [];    /* 최근에 열어 본 폴더 */
+var curLoc = "";       /* 지금 열어 둔 폴더. 비어 있으면 아직 고르지 않은 상태 */
 
 /* ── refs ────────────────────────────────────────────────────── */
 var src=$("src"), doc=$("doc"), paneSrc=$("paneSrc"), panePrev=$("panePrev"), divider=$("divider"),
@@ -254,23 +36,44 @@ var src=$("src"), doc=$("doc"), paneSrc=$("paneSrc"), panePrev=$("panePrev"), di
     shelf=$("shelf"), shelfList=$("shelfList"), shelfEmpty=$("shelfEmpty"),
     shelfCount=$("shelfCount"), menu=$("menu"), composer=$("composer"), composerText=$("composerText"),
     composerQuote=$("composerQuote"), tip=$("tip"), tipText=$("tipText"), tipMeta=$("tipMeta"),
-    toast=$("toast"), drop=$("drop"), winTitle=$("winTitle"), prevLabel=$("prevLabel"),
-    prevHint=$("prevHint");
+    toast=$("toast"), drop=$("drop"), prevLabel=$("prevLabel"), prevHint=$("prevHint"),
+    treeMenu=$("treeMenu"), railEmpty=$("railEmpty"), paneEmpty=$("paneEmpty"),
+    namer=$("namer"), namerInput=$("namerInput"), namerTitle=$("namerTitle"), namerHint=$("namerHint");
 
 var state = {
   note:null, mode:"md", theme:"system", text:"", activeId:null, seq:100,
   pending:null, menuSel:null, wysiwygDirty:false, suppressSync:false
 };
 
-/* 앱 셸(Tauri)이 채우는 훅. 브라우저에서 열면 비어 있고 샘플 노트로 동작한다. */
-var HOOKS = { onChange:null, onPickFolder:null, onNewFolder:null };
+/* 앱 셸(Tauri)이 채우는 훅. 브라우저에서 그냥 열면 비어 있고,
+   파일이 필요한 동작은 안내만 하고 아무 일도 하지 않는다. */
+var HOOKS = {
+  onChange:null,       /* (force) 편집 내용을 파일에 쓴다 */
+  onPickFolder:null,   /* 폴더 선택 창 */
+  onCreateNote:null,   /* (dirPath, name) */
+  onCreateFolder:null, /* (dirPath, name) */
+  onRename:null,       /* (path, newName, isDir) */
+  onDelete:null,       /* (path, isDir) */
+  onReveal:null,       /* (path) 탐색기에서 보기 */
+  onOpenFolder:null,   /* (path) 최근 목록에서 고른 폴더 열기 */
+  onNoteChange:null,   /* (note) 창 제목 갱신 */
+  resolveAsset:null    /* (url) 상대 경로 이미지 해석 */
+};
+function needsApp(){
+  showToast("이 동작은 앱에서만 됩니다. 브라우저에서는 파일을 만들거나 지울 수 없습니다.");
+}
 
 /* ── 마크다운 → HTML ─────────────────────────────────────────── */
 function esc(s){
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 function bare(s){ return String(s).replace(RE_OPEN,"").replace(RE_END,"").replace(RE_ANY,""); }
-function assetUrl(u){ return ASSETS[u] || u; }
+function assetUrl(u){
+  if(HOOKS.resolveAsset){
+    try{ return HOOKS.resolveAsset(u) || u; }catch(e){ return u; }
+  }
+  return u;
+}
 
 function inl(s){
   s = esc(s);
@@ -673,18 +476,34 @@ function noteOf(id){
 function indexTree(){
   DIRS = {};
   var seq = 0;
-  (function walk(nodes, path){
+  (function walk(nodes, rel, abs){
     nodes.forEach(function(node){
       if(node.type === "dir"){
         node.id = node.id || ("d" + (++seq));
+        node.rel = rel.concat([node.name]).join("\\");
+        node.path = node.path || (abs ? abs + "\\" + node.name : node.name);
         DIRS[node.id] = node;
-        walk(node.children, path.concat([node.name]));
+        walk(node.children, rel.concat([node.name]), node.path);
       }else{
         var n = noteOf(node.note);
-        if(n) n.dir = path.join("\\");
+        if(n){
+          n.dir = rel.join("\\");
+          n.dirPath = abs;
+        }
       }
     });
-  })(TREE, []);
+  })(TREE, [], curLoc);
+}
+/* 폴더를 아직 고르지 않았거나 노트가 없을 때의 화면 */
+function refreshEmptyStates(){
+  var noFolder = !curLoc;
+  railEmpty.classList.toggle("on", noFolder || !NOTES.length);
+  tree.style.display = (noFolder || !TREE.length) ? "none" : "";
+  paneEmpty.classList.toggle("on", !state.note);
+  $("pickBtn").textContent = noFolder ? "폴더 선택" : "다른 폴더 선택";
+  railEmpty.querySelector("p").textContent = noFolder
+    ? "메모를 둘 폴더를 고르면 그 안의 .md 파일이 여기 나옵니다."
+    : "이 폴더에는 아직 .md 파일이 없습니다. 위의 새 노트 버튼으로 만드세요.";
 }
 function renderTree(){
   tree.innerHTML = "";
@@ -739,10 +558,10 @@ function renderTree(){
 }
 function updatePath(){
   var n = state.note;
-  if(!n) return;
+  if(!n){ $("stPath").textContent = ""; return; }
   var rel = (n.dir ? n.dir + "\\" : "") + (n.file || n.title + ".md");
   $("stPath").textContent = rel;
-  $("stPath").title = curLoc + "\\" + rel;
+  $("stPath").title = n.path || (curLoc ? curLoc + "\\" + rel : rel);
 }
 
 /* ── 저장 위치 고르기 ────────────────────────────────────────── */
@@ -784,11 +603,25 @@ function updateStatus(){
   $("stLines").textContent = t.split("\n").length + "줄";
   $("stMode").textContent = state.mode === "wysiwyg" ? "WYSIWYG" : "Markdown";
 }
-function markSaved(force){
-  if(HOOKS.onChange){ try{ HOOKS.onChange(!!force); }catch(e){} }
+/* 상태바의 저장 표시. 실제로 파일에 쓸 수 있을 때만 시각을 찍는다. */
+function setSaved(text, idle){
+  $("stSaved").textContent = text;
+  $("stSaved").parentNode.classList.toggle("idle", !!idle);
+}
+function stampSaved(){
+  var n = state.note;
+  if(!n) return;
+  if(!n.path || !HOOKS.onChange){
+    setSaved("저장되지 않음", true);
+    return;
+  }
   var d = new Date(), h = d.getHours(), mm = ("0"+d.getMinutes()).slice(-2);
   var ap = h < 12 ? "오전" : "오후", h12 = (h % 12 === 0) ? 12 : h % 12;
-  $("stSaved").textContent = "자동 저장됨 " + ap + " " + h12 + ":" + mm;
+  setSaved("저장됨 " + ap + " " + h12 + ":" + mm, false);
+}
+function markSaved(force){
+  if(HOOKS.onChange){ try{ HOOKS.onChange(!!force); }catch(e){} }
+  stampSaved();
 }
 
 /* 원문 편집 후: 오프셋 갱신 → 미리보기 재렌더 */
@@ -814,7 +647,24 @@ function loadNote(note){
   state.note = note;
   state.activeId = null;
   state.wysiwygDirty = false;
-  winTitle.textContent = note.title;
+  if(!note){
+    /* 열어 둔 노트 없음 */
+    state.text = "";
+    src.textContent = "";
+    doc.innerHTML = "";
+    renderTree();
+    shelfList.innerHTML = "";
+    shelfEmpty.hidden = false;
+    shelfCount.textContent = "0";
+    $("annoCount").querySelector(".n").textContent = "0";
+    $("stAnno").textContent = "주석 0";
+    $("stPath").textContent = "";
+    setSaved(curLoc ? "열어 둔 노트 없음" : "폴더를 고르지 않음", true);
+    updateStatus();
+    refreshEmptyStates();
+    if(HOOKS.onNoteChange) HOOKS.onNoteChange(null);
+    return;
+  }
   state.text = note.src;
   writeSource(note.src, rangesOf(note));
   syncFrom(src);
@@ -822,7 +672,9 @@ function loadNote(note){
   renderShelf();
   updateStatus();
   updatePath();
-  markSaved();
+  refreshEmptyStates();
+  stampSaved();
+  if(HOOKS.onNoteChange) HOOKS.onNoteChange(note);
   srcScroll.scrollTop = 0;
   prevScroll.scrollTop = 0;
 }
@@ -1263,6 +1115,10 @@ menu.addEventListener("click", function(e){
 document.addEventListener("mousedown", function(e){
   if(!menu.contains(e.target)) closeMenu();
   if(!locMenu.contains(e.target) && e.target.closest && !e.target.closest("#locBtn")) closeLocMenu();
+  if(!treeMenu.contains(e.target)) closeTreeMenu();
+  if(namer.classList.contains("open") && !namer.contains(e.target) && !treeMenu.contains(e.target)){
+    closeNamer();
+  }
   if(composer.classList.contains("open") && !composer.contains(e.target) && !menu.contains(e.target)){
     closeComposer();
   }
@@ -1300,14 +1156,10 @@ document.addEventListener("click", function(e){
   if(loc){
     var p = loc.getAttribute("data-loc");
     closeLocMenu();
-    if(p === "__pick__"){
-      if(HOOKS.onPickFolder) HOOKS.onPickFolder();
-      else showToast("실제 앱에서는 윈도우 폴더 선택 창이 열립니다. 고른 폴더의 .md 파일을 그대로 읽어 트리에 보여줍니다.");
-    }else if(p !== curLoc){
-      curLoc = p;
-      locPath.textContent = p;
-      updatePath();
-      showToast("저장 위치를 바꿨습니다. 시안이라 트리 내용은 그대로 둡니다.");
+    if(p === "__pick__") openPicker();
+    else if(p !== curLoc){
+      if(HOOKS.onOpenFolder) HOOKS.onOpenFolder(p);
+      else needsApp();
     }
     return;
   }
@@ -1342,32 +1194,208 @@ $("themeSeg").addEventListener("click", function(e){
   if(b) setTheme(b.getAttribute("data-theme-set"), true);
 });
 $("railToggle").addEventListener("click", function(){ rail.classList.toggle("hidden"); });
+function openPicker(){
+  if(HOOKS.onPickFolder) HOOKS.onPickFolder();
+  else showToast("폴더 선택은 앱에서만 됩니다. 브라우저에서는 화면만 볼 수 있습니다.");
+}
 $("locBtn").addEventListener("click", function(e){
   e.stopPropagation();
-  if(locMenu.classList.contains("open")) closeLocMenu();
-  else openLocMenu();
+  if(locMenu.classList.contains("open")){ closeLocMenu(); return; }
+  /* 최근 목록이 없으면 곧바로 폴더 선택 창으로 */
+  if(!LOCATIONS.length){ openPicker(); return; }
+  openLocMenu();
 });
-$("newNote").addEventListener("click", function(){
-  var i = 1, name;
-  do { name = "새 노트" + (i > 1 ? " " + i : "") + ".md"; i++; }
-  while(NOTES.some(function(n){ return n.file === name; }));
-  var n = {id:"n" + (state.seq++), title:name.replace(/\.md$/,""), file:name,
-           date:"08-23", src:"# " + name.replace(/\.md$/,"") + "\n\n", annos:[]};
-  NOTES.push(n);
-  TREE.push({type:"file", note:n.id});
-  indexTree();
-  loadNote(n);
-  src.focus();
+
+/* ── 파일/폴더 우클릭 메뉴 ───────────────────────────────────── */
+var TM = [
+  {act:"open",    label:"열기",            file:true,  dir:false},
+  {act:"rename",  label:"이름 바꾸기",      file:true,  dir:true, key:"F2"},
+  {act:"delete",  label:"삭제",            file:true,  dir:true, danger:true},
+  {sep:true},
+  {act:"newnote", label:"이 폴더에 새 노트", file:false, dir:true},
+  {act:"newdir",  label:"이 폴더에 새 폴더", file:false, dir:true},
+  {sep:true},
+  {act:"reveal",  label:"탐색기에서 보기",   file:true,  dir:true},
+  {act:"copypath",label:"경로 복사",        file:true,  dir:true}
+];
+function openTreeMenu(x, y, node, isDir){
+  state.treeTarget = {node:node, isDir:isDir};
+  treeMenu.innerHTML = "";
+  TM.forEach(function(item){
+    if(item.sep){ treeMenu.appendChild(document.createElement("hr")); return; }
+    if(isDir ? !item.dir : !item.file) return;
+    var b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("role","menuitem");
+    b.setAttribute("data-tact", item.act);
+    if(item.danger) b.style.color = "var(--danger)";
+    b.appendChild(document.createTextNode(item.label));
+    if(item.key){
+      var k = document.createElement("span");
+      k.className = "k"; k.textContent = item.key;
+      b.appendChild(k);
+    }
+    treeMenu.appendChild(b);
+  });
+  treeMenu.classList.add("open");
+  var p = clampInto(treeMenu, x, y);
+  treeMenu.style.left = p.x + "px";
+  treeMenu.style.top = p.y + "px";
+}
+function closeTreeMenu(){
+  treeMenu.classList.remove("open");
+  [].forEach.call(tree.querySelectorAll(".row.marked"), function(el){ el.classList.remove("marked"); });
+}
+function runTreeAction(act){
+  var t = state.treeTarget;
+  if(!t) return;
+  var node = t.node, isDir = t.isDir;
+  var path = isDir ? node.path : node.path;
+  var name = isDir ? node.name : node.file;
+
+  if(act === "open" && !isDir){ loadNote(node); return; }
+  if(act === "rename"){
+    askName("이름 바꾸기", name, isDir ? "폴더 이름" : "파일 이름", function(v){
+      if(v === name) return;
+      if(HOOKS.onRename) HOOKS.onRename(path, v, isDir);
+      else needsApp();
+    });
+    return;
+  }
+  if(act === "delete"){
+    confirmDelete(name, isDir, function(){
+      if(HOOKS.onDelete) HOOKS.onDelete(path, isDir);
+      else needsApp();
+    });
+    return;
+  }
+  if(act === "newnote"){ newNote(path); return; }
+  if(act === "newdir"){ newFolder(path); return; }
+  if(act === "reveal"){
+    if(HOOKS.onReveal) HOOKS.onReveal(path);
+    else needsApp();
+    return;
+  }
+  if(act === "copypath"){
+    copyText(path);
+    return;
+  }
+}
+function copyText(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ showToast("경로를 복사했습니다."); },
+      function(){ showToast("복사하지 못했습니다."); });
+    return;
+  }
+  showToast("복사하지 못했습니다.");
+}
+treeMenu.addEventListener("click", function(e){
+  var b = e.target.closest("button");
+  if(!b) return;
+  var act = b.getAttribute("data-tact");
+  closeTreeMenu();
+  runTreeAction(act);
 });
-$("newFolder").addEventListener("click", function(){
-  var i = 1, name;
-  do { name = "새 폴더" + (i > 1 ? " " + i : ""); i++; }
-  while(TREE.some(function(x){ return x.type === "dir" && x.name === name; }));
-  TREE.unshift({type:"dir", name:name, open:true, children:[]});
-  indexTree();
-  renderTree();
-  showToast("폴더를 만들었습니다. 실제 앱에서는 저장 위치 안에 폴더가 생깁니다.");
+tree.addEventListener("contextmenu", function(e){
+  var row = e.target.closest ? e.target.closest(".row") : null;
+  if(!row) return;
+  e.preventDefault();
+  closeMenu(); closeLocMenu(); hideTip();
+  [].forEach.call(tree.querySelectorAll(".row.marked"), function(el){ el.classList.remove("marked"); });
+  row.classList.add("marked");
+  var dirId = row.getAttribute("data-dir");
+  if(dirId){
+    var d = DIRS[dirId];
+    state.markedDir = d;
+    openTreeMenu(e.clientX + 2, e.clientY + 2, d, true);
+  }else{
+    var n = noteOf(row.getAttribute("data-note"));
+    if(!n) return;
+    state.markedDir = null;
+    openTreeMenu(e.clientX + 2, e.clientY + 2, n, false);
+  }
 });
+
+/* ── 이름 입력 / 삭제 확인 ───────────────────────────────────── */
+var namerOnOk = null;
+function askName(title, initial, hint, onOk){
+  namerTitle.textContent = title;
+  namerInput.value = initial || "";
+  namerHint.textContent = hint || "";
+  namerOnOk = onOk;
+  $("namerOk").textContent = "확인";
+  namer.classList.add("open");
+  var r = rail.getBoundingClientRect();
+  var p = clampInto(namer, r.right + 8, 120);
+  namer.style.left = p.x + "px";
+  namer.style.top = p.y + "px";
+  namerInput.focus();
+  var dot = namerInput.value.lastIndexOf(".");
+  namerInput.setSelectionRange(0, dot > 0 ? dot : namerInput.value.length);
+}
+function confirmDelete(name, isDir, onOk){
+  namerTitle.textContent = (isDir ? "폴더" : "파일") + "을 휴지통으로 보냅니다";
+  namerInput.value = name;
+  namerInput.readOnly = true;
+  namerHint.textContent = isDir ? "안에 든 파일도 함께 갑니다" : "";
+  namerOnOk = function(){ onOk(); };
+  $("namerOk").textContent = "삭제";
+  namer.classList.add("open");
+  var r = rail.getBoundingClientRect();
+  var p = clampInto(namer, r.right + 8, 120);
+  namer.style.left = p.x + "px";
+  namer.style.top = p.y + "px";
+  $("namerOk").focus();
+}
+function closeNamer(){
+  namer.classList.remove("open");
+  namerInput.readOnly = false;
+  namerOnOk = null;
+}
+$("namerOk").addEventListener("click", function(){
+  var v = namerInput.value.trim();
+  var fn = namerOnOk;
+  if(!namerInput.readOnly){
+    if(!v){ namerInput.focus(); return; }
+    if(/[\\/:*?"<>|]/.test(v)){
+      showToast("이름에 \\ / : * ? \" < > | 는 쓸 수 없습니다.");
+      namerInput.focus();
+      return;
+    }
+  }
+  closeNamer();
+  if(fn) fn(v);
+});
+$("namerCancel").addEventListener("click", closeNamer);
+namerInput.addEventListener("keydown", function(e){
+  if(e.key === "Enter"){ e.preventDefault(); $("namerOk").click(); }
+  else if(e.key === "Escape"){ e.preventDefault(); closeNamer(); }
+});
+/* 새 노트 / 새 폴더는 지금 고른 위치(폴더를 눌러 뒀으면 그 폴더, 아니면 최상위)에 만든다 */
+function targetDir(){
+  if(state.markedDir) return {path:state.markedDir.path, label:state.markedDir.rel};
+  var n = state.note;
+  if(n && n.dirPath) return {path:n.dirPath, label:n.dir};
+  return {path:curLoc, label:""};
+}
+function newNote(dirPath, label){
+  if(!curLoc){ showToast("먼저 메모를 둘 폴더를 고르세요."); openPicker(); return; }
+  askName("새 노트", "제목 없음", "이름", function(name){
+    var file = /\.(md|markdown)$/i.test(name) ? name : name + ".md";
+    if(HOOKS.onCreateNote) HOOKS.onCreateNote(dirPath || curLoc, file);
+    else needsApp();
+  });
+}
+function newFolder(dirPath){
+  if(!curLoc){ showToast("먼저 메모를 둘 폴더를 고르세요."); openPicker(); return; }
+  askName("새 폴더", "새 폴더", "이름", function(name){
+    if(HOOKS.onCreateFolder) HOOKS.onCreateFolder(dirPath || curLoc, name);
+    else needsApp();
+  });
+}
+$("newNote").addEventListener("click", function(){ var t = targetDir(); newNote(t.path, t.label); });
+$("newFolder").addEventListener("click", function(){ newFolder(targetDir().path); });
+$("pickBtn").addEventListener("click", function(){ openPicker(); });
 $("shelfToggle").addEventListener("click", function(){
   var collapsed = shelf.classList.toggle("collapsed");
   this.setAttribute("aria-expanded", String(!collapsed));
@@ -1463,27 +1491,23 @@ document.addEventListener("keydown", function(e){
   if(ctrl && !e.altKey && e.code === "KeyB"){ e.preventDefault(); applyFmt("bold"); return; }
   if(ctrl && !e.altKey && e.code === "KeyI"){ e.preventDefault(); applyFmt("italic"); return; }
   if(ctrl && !e.altKey && e.code === "KeyK"){ e.preventDefault(); applyFmt("link"); return; }
-  if(e.key === "Escape"){ closeMenu(); closeComposer(); hideTip(); }
+  if(e.code === "F2" && state.note){
+    e.preventDefault();
+    var n = state.note;
+    askName("이름 바꾸기", n.file || n.title + ".md", "파일 이름", function(v){
+      if(HOOKS.onRename) HOOKS.onRename(n.path, v, false);
+      else needsApp();
+    });
+    return;
+  }
+  if(e.key === "Escape"){ closeMenu(); closeComposer(); closeTreeMenu(); closeLocMenu(); closeNamer(); hideTip(); }
 });
 
 /* ── 시작 ────────────────────────────────────────────────────── */
-/* 샘플 주석은 인용문으로 적어 두고, 여기서 한 번만 오프셋으로 바꾼다 */
-NOTES.forEach(function(n){
-  n.annos = n.annos.filter(function(a){
-    var i = n.src.indexOf(a.find);
-    if(i < 0) return false;
-    a.start = i; a.end = i + a.find.length; a.text = a.find;
-    return true;
-  });
-});
 initTheme();
 indexTree();
-locPath.textContent = curLoc;
-loadNote(NOTES[0]);
-setTimeout(function(){
-  if(window.__TAURI__) return;   /* 앱에서는 브릿지가 안내를 맡는다 */
-  showToast("본문에서 구간을 선택하고 우클릭 → 주석 달기. 원문·미리보기·위지윅 어디서 달아도 같은 구간에 남습니다.");
-}, 900);
+renderTree();
+loadNote(null);      /* 폴더를 고르기 전까지는 빈 화면 */
 
 /* ── 앱 셸과 붙는 지점 ───────────────────────────────────────
    bridge.js 가 이 객체만 보고 파일 시스템에 연결한다.
@@ -1501,13 +1525,21 @@ window.CommentNote = {
   renderShelf:renderShelf,
   updatePath:updatePath,
   showToast:showToast,
+  refreshEmptyStates:refreshEmptyStates,
   getLocation:function(){ return curLoc; },
   setLocation:function(p){
-    curLoc = p;
-    locPath.textContent = p;
-    if(LOCATIONS.indexOf(p) < 0) LOCATIONS.unshift(p);
-    if(LOCATIONS.length > 5) LOCATIONS.length = 5;
+    curLoc = p || "";
+    locPath.textContent = curLoc || "폴더 선택…";
+    if(curLoc){
+      if(LOCATIONS.indexOf(curLoc) < 0) LOCATIONS.unshift(curLoc);
+      if(LOCATIONS.length > 5) LOCATIONS.length = 5;
+    }
     updatePath();
+    refreshEmptyStates();
+  },
+  setRecents:function(list){
+    LOCATIONS.length = 0;
+    (list || []).forEach(function(p){ if(LOCATIONS.indexOf(p) < 0) LOCATIONS.push(p); });
   },
   currentText:function(){ return state.text; },
   currentNote:function(){ return state.note; }

@@ -79,33 +79,9 @@ body{margin:0;background:var(--desk);color:var(--ink);font-family:var(--font-ui)
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-radius:4px}
 
-/* desk + window ------------------------------------------------ */
-.desk{height:100dvh;display:flex;align-items:center;justify-content:center;padding:22px}
-.win{width:100%;max-width:1340px;height:100%;max-height:920px;background:var(--bg);
-  border:1px solid var(--border-strong);border-radius:10px;box-shadow:var(--shadow);
-  display:flex;flex-direction:column;overflow:hidden}
-@media (max-width:900px){
-  .desk{padding:0}
-  .win{max-height:none;border-radius:0;border:0}
-}
-
-/* title bar ---------------------------------------------------- */
-.titlebar{height:38px;flex:0 0 38px;display:flex;align-items:center;gap:10px;padding-left:12px;
-  background:var(--surface-2);border-bottom:1px solid var(--border)}
-.brand{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;flex:0 0 auto}
-.brand svg{width:15px;height:15px;color:var(--accent)}
-.doctitle{font-size:12.5px;color:var(--ink-2);display:flex;align-items:center;gap:8px;min-width:0}
-.doctitle .sep{color:var(--border-strong)}
-.doctitle .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chip-mock{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent-wash);
-  padding:1px 6px;border-radius:4px;flex:0 0 auto}
+/* 창 전체를 채운다. 창 테두리와 제목줄은 윈도우가 그린다. */
+.app{height:100dvh;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
 .tb-spacer{flex:1;height:100%;min-width:12px}
-.wctl{display:flex;height:100%;flex:0 0 auto}
-.wctl button{width:46px;height:100%;display:grid;place-items:center;color:var(--ink-2);border-radius:0}
-.wctl button svg{width:10px;height:10px}
-.wctl button:hover{background:var(--surface-3);color:var(--ink)}
-.wctl button.close:hover{background:#C4322B;color:#fff}
 
 /* toolbar ------------------------------------------------------ */
 .toolbar{flex:0 0 44px;display:flex;align-items:center;gap:5px;padding:0 10px;background:var(--surface);
@@ -142,9 +118,19 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .rail{width:222px;flex:0 0 222px;background:var(--surface-2);border-right:1px solid var(--border);
   display:flex;flex-direction:column;min-height:0;transition:margin-left .18s ease}
 .rail.hidden{margin-left:-223px}
-.rail-head{padding:12px 10px 8px;display:flex;flex-direction:column;gap:5px}
+.rail-head{padding:11px 8px 6px 12px;display:flex;align-items:center;gap:8px}
 .rail-head h2{margin:0;font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.1em;
   text-transform:uppercase;color:var(--ink-3)}
+.rail-acts{margin-left:auto;display:flex;gap:2px}
+.rail-acts button{width:26px;height:26px;display:grid;place-items:center;border-radius:6px;
+  color:var(--ink-2)}
+.rail-acts button:hover{background:var(--surface-3);color:var(--accent)}
+.rail-acts button svg{width:15px;height:15px}
+.rail-loc{padding:0 10px 8px}
+.rail-empty{padding:14px 14px 18px;display:none;flex-direction:column;gap:10px;align-items:flex-start}
+.rail-empty.on{display:flex}
+.rail-empty p{margin:0;font-size:12px;line-height:1.7;color:var(--ink-3)}
+.rail-empty code{font-family:var(--font-mono);font-size:11px;color:var(--ink-2)}
 /* 저장 위치 */
 .loc{width:100%;display:flex;align-items:center;gap:7px;height:30px;padding:0 7px;border-radius:7px;
   border:1px solid var(--border);background:var(--surface);text-align:left}
@@ -177,12 +163,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .row.dir{font-weight:500}
 .row.file[aria-current="true"]{background:var(--surface);border-left-color:var(--accent-line);
   box-shadow:0 1px 2px rgba(0,0,0,.06);font-weight:500}
-.rail-foot{flex:0 0 auto;display:flex;gap:5px;padding:7px 8px 9px;border-top:1px solid var(--border)}
-.rail-foot button{flex:1;height:26px;border-radius:6px;border:1px solid var(--border);
-  background:var(--surface);font-size:11.5px;color:var(--ink-2);display:flex;align-items:center;
-  justify-content:center;gap:5px}
-.rail-foot button:hover{background:var(--surface-3);color:var(--ink)}
-.rail-foot button svg{width:12px;height:12px}
+.row.marked{background:var(--surface-3)}          /* 우클릭한 항목 */
 
 .work{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
 .panes{flex:1;display:flex;min-height:0;background:var(--surface);position:relative}
@@ -193,6 +174,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .pane-head .label{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--ink-3)}
 .pane-head .hint{font-size:10.5px;color:var(--ink-3)}
+/* 열어 둔 노트가 없을 때 */
+.pane-empty{position:absolute;inset:0;z-index:20;display:none;place-items:center;background:var(--surface);
+  text-align:center;padding:20px}
+.pane-empty.on{display:grid}
+.pane-empty p{margin:0;font-size:13px;line-height:1.8;color:var(--ink-3)}
+.pane-empty .big{font-size:15px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+.pane-empty strong{color:var(--accent);font-weight:600}
+
 .divider{flex:0 0 1px;background:var(--border);cursor:col-resize;position:relative}
 .divider.hide{display:none}
 .divider::after{content:"";position:absolute;top:0;bottom:0;left:-3px;right:-3px}
@@ -301,6 +290,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .status .right{margin-left:auto;display:flex;gap:15px;align-items:center}
 .status .saved{color:var(--ink-2);display:flex;align-items:center;gap:6px}
 .status .saved .d{width:5px;height:5px;border-radius:50%;background:var(--link)}
+.status .saved.idle{color:var(--ink-3)}
+.status .saved.idle .d{background:var(--border-strong)}
 
 /* floating layers ---------------------------------------------- */
 .menu{position:fixed;z-index:60;min-width:216px;background:var(--surface);
@@ -330,6 +321,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   padding:8px 9px;outline:none}
 .composer textarea::placeholder{color:var(--ink-3)}
 .composer textarea:focus{border-color:var(--accent-line);background:var(--surface)}
+/* 이름 입력 (새 노트 / 새 폴더 / 이름 바꾸기) */
+.composer.namer{width:296px}
+.composer .ntitle{font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:8px}
+.composer input[type="text"]{width:100%;height:32px;font:inherit;font-size:13px;color:var(--ink);
+  background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:0 9px;
+  outline:none}
+.composer input[type="text"]:focus{border-color:var(--accent-line);background:var(--surface)}
 .composer .row{display:flex;align-items:center;gap:8px;margin-top:9px}
 .composer .hint{font-family:var(--font-mono);font-size:10px;color:var(--ink-3);flex:1}
 .btn{height:27px;padding:0 12px;border-radius:6px;font-size:12px;font-weight:500;

@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/badge/license-MIT-C98A2B?style=flat-square)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-2E2C28?style=flat-square)
 ![Tauri](https://img.shields.io/badge/Tauri-2-C98A2B?style=flat-square)
-![Status](https://img.shields.io/badge/status-시안%20단계-8C877F?style=flat-square)
+![Status](https://img.shields.io/badge/status-개발%20중-8C877F?style=flat-square)
 
 </div>
 
@@ -26,9 +26,10 @@
 <img src="docs/screenshot-light.png" alt="라이트 모드 — 마크다운 원문과 미리보기, 하단 주석 패널">
 
 <details>
-<summary>다크 모드</summary>
+<summary>다크 모드 · 처음 실행한 화면</summary>
 
 <img src="docs/screenshot-dark.png" alt="다크 모드">
+<img src="docs/screenshot-empty.png" alt="처음 실행하면 폴더를 고르는 것부터 시작한다">
 
 </details>
 
@@ -51,8 +52,11 @@
 | | |
 |---|---|
 | **편집 방식 두 개** | 마크다운 원문 + 실시간 미리보기 / 위지윅. 두 방식은 서로 되돌아온다 (위지윅에서 고친 내용과 새로 단 주석이 마크다운 원문에 그대로 남는다) |
-| **저장 위치를 고른다** | 폴더 하나를 열고 그 안의 `.md` 파일을 그대로 다룬다. 앱 전용 데이터베이스는 없다 |
+| **저장 위치를 고른다** | 폴더 하나를 열고 그 안의 `.md` 파일을 그대로 다룬다. 앱 전용 데이터베이스는 없다. 처음 실행하면 아무 폴더도 열려 있지 않다 |
 | **폴더 트리** | 고른 폴더의 구조를 그대로 보여준다. 파일마다 주석 개수가 붙는다 |
+| **파일 다루기** | 새 노트 · 새 폴더는 왼쪽 위 버튼. 파일이나 폴더를 우클릭하면 이름 바꾸기, 삭제, 탐색기에서 보기, 경로 복사 |
+| **삭제는 휴지통으로** | 완전 삭제하지 않는다. 잘못 지워도 되돌릴 수 있다 |
+| **자동 저장** | 편집이 멈추면 0.7초 뒤에 파일에 쓴다. `Ctrl+S` 는 즉시 |
 | **이미지** | 붙여넣기(`Ctrl+V`), 드래그 앤 드롭 |
 | **테마** | 라이트 / 다크 / 시스템 |
 
@@ -72,19 +76,21 @@
 
 ## 지금 상태
 
-UI와 주석 엔진은 동작한다. 파일 시스템 연결은 코드만 있고 아직 실행해 보지 않았다.
+UI 와 주석 엔진은 브라우저 헤드리스 테스트 44개로 검증했다.
+파일 시스템 쪽은 CI 에서 컴파일까지 확인했고, 사람이 실제로 눌러 본 검증은 아직 없다.
 
 - [x] 주석 엔진 — 문자 오프셋 기반, 세 화면 동기화, 고아 주석 처리
 - [x] 마크다운 렌더러 (제목·목록·표·인용·코드펜스·이미지·링크)
 - [x] 마크다운 ↔ 위지윅 왕복
-- [x] 폴더 트리 · 저장 위치 UI
+- [x] 폴더 열기 · 폴더 트리 · 자동 저장
+- [x] 새 노트 / 새 폴더 / 이름 바꾸기 / 삭제(휴지통) / 탐색기에서 보기
 - [x] 라이트 / 다크 / 시스템 테마
-- [ ] **파일 읽기·쓰기 실제 확인** (Rust 명령은 작성됨, 빌드 미실행)
-- [ ] 주석을 파일에 저장 — 아래 설계 확정 필요
+- [ ] **실기 확인** — 폴더를 열고 저장·삭제까지 사람이 눌러 보는 검증
+- [ ] 주석을 파일에 저장 — 아래 설계 확정 필요. 지금은 주석이 앱을 닫으면 사라진다
 - [ ] 파일 감시 (외부에서 파일이 바뀌면 갱신, 동기화 폴더 중복 이벤트 디바운스)
 - [ ] 한 구간에 주석이 겹칠 때의 표시
-- [ ] 편집기 코어를 ProseMirror로 교체 (지금은 `contenteditable` 직접 제어)
-- [ ] 폰트 번들 (지금은 Google Fonts를 네트워크로 받는다 → 오프라인에서 대체 폰트)
+- [ ] 편집기 코어를 ProseMirror 로 교체 (지금은 `contenteditable` 직접 제어)
+- [ ] 폰트 번들 (지금은 Google Fonts 를 네트워크로 받는다 → 오프라인에서 대체 폰트)
 - [ ] 코드 서명, 자동 업데이트
 - [ ] 맥 지원
 
@@ -109,14 +115,8 @@ npm run build    # 설치 파일 만들기 (src-tauri/target/release/bundle/nsis
 
 ### UI만 먼저 보고 싶다면
 
-Rust 없이도 화면은 볼 수 있다. 프론트엔드가 정적 파일이라 브라우저로 바로 열린다.
-
-```
-src/index.html          # 앱 화면 (샘플 노트로 동작)
-mockup/index.html       # 단일 파일 시안 (설명용, 히스토리 보존)
-```
-
-브라우저에서 열면 파일 저장은 되지 않고 샘플 노트로 모든 기능을 눌러볼 수 있다.
+Rust 없이도 화면은 볼 수 있다. 프론트엔드가 정적 파일이라 `src/index.html` 을 브라우저로 바로 열 수 있다.
+다만 파일을 읽고 쓰는 일은 앱 셸이 하는 몫이라, 브라우저에서는 빈 화면과 UI 만 보인다.
 
 <br>
 
@@ -130,12 +130,11 @@ comment-note/
 │  ├─ app.js               주석 엔진, 마크다운 렌더러, 직렬화기, UI
 │  └─ bridge.js            앱 셸 연결 — 브라우저에서는 아무것도 하지 않는다
 ├─ src-tauri/
-│  ├─ src/lib.rs           list_notes, read_note, write_note, safe_file_name, config
+│  ├─ src/lib.rs           폴더 읽기, 저장, 만들기/이름 바꾸기/휴지통, 설정
 │  ├─ src/main.rs
 │  ├─ tauri.conf.json
 │  ├─ capabilities/        창에 주는 권한
 │  └─ icons/
-├─ mockup/index.html       단일 파일 시안
 └─ docs/                   스크린샷
 ```
 

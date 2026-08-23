@@ -108,6 +108,107 @@ fn create_folder(path: String) -> Result<(), String> {
     fs::create_dir_all(&path).map_err(|e| format!("{}: {}", path, e))
 }
 
+/// 폴더 안에 새 노트를 만든다. 같은 이름이 있으면 뒤에 숫자를 붙인다.
+/// 만들어진 파일의 전체 경로를 돌려준다.
+#[tauri::command]
+fn create_note(dir: String, name: String) -> Result<String, String> {
+    let dir_path = PathBuf::from(&dir);
+    fs::create_dir_all(&dir_path).map_err(|e| format!("{}: {}", dir, e))?;
+
+    let safe = safe_file_name(name);
+    let stem = safe.trim_end_matches(".md").trim_end_matches(".markdown").to_string();
+    let mut candidate = dir_path.join(format!("{}.md", stem));
+    let mut n = 2;
+    while candidate.exists() {
+        candidate = dir_path.join(format!("{} {}.md", stem, n));
+        n += 1;
+        if n > 999 {
+            return Err("같은 이름의 파일이 너무 많습니다".into());
+        }
+    }
+    let title = candidate
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("새 노트")
+        .to_string();
+    fs::write(&candidate, format!("# {}\n\n", title))
+        .map_err(|e| format!("{}: {}", candidate.display(), e))?;
+    Ok(candidate.to_string_lossy().to_string())
+}
+
+/// 폴더 안에 새 폴더를 만든다. 만들어진 폴더의 전체 경로를 돌려준다.
+#[tauri::command]
+fn create_subfolder(dir: String, name: String) -> Result<String, String> {
+    let base = PathBuf::from(&dir);
+    let safe = safe_file_name(name);
+    let mut candidate = base.join(&safe);
+    let mut n = 2;
+    while candidate.exists() {
+        candidate = base.join(format!("{} {}", safe, n));
+        n += 1;
+        if n > 999 {
+            return Err("같은 이름의 폴더가 너무 많습니다".into());
+        }
+    }
+    fs::create_dir_all(&candidate).map_err(|e| format!("{}: {}", candidate.display(), e))?;
+    Ok(candidate.to_string_lossy().to_string())
+}
+
+/// 이름을 바꾼다. 같은 폴더 안에서만 움직이고, 이미 있는 이름으로는 바꾸지 않는다.
+/// 바뀐 경로를 돌려준다.
+#[tauri::command]
+fn rename_path(path: String, new_name: String, is_dir: bool) -> Result<String, String> {
+    let from = PathBuf::from(&path);
+    if !from.exists() {
+        return Err(format!("찾을 수 없습니다: {}", path));
+    }
+    let parent = from
+        .parent()
+        .ok_or_else(|| "상위 폴더를 찾을 수 없습니다".to_string())?;
+
+    let mut safe = safe_file_name(new_name);
+    if !is_dir && !(safe.to_lowercase().ends_with(".md") || safe.to_lowercase().ends_with(".markdown"))
+    {
+        safe.push_str(".md");
+    }
+    let to = parent.join(&safe);
+
+    // 대소문자만 바꾸는 경우는 같은 파일이므로 통과시킨다.
+    let same = to
+        .to_string_lossy()
+        .eq_ignore_ascii_case(&from.to_string_lossy());
+    if to.exists() && !same {
+        return Err(format!("이미 있는 이름입니다: {}", safe));
+    }
+    fs::rename(&from, &to).map_err(|e| format!("{}: {}", path, e))?;
+    Ok(to.to_string_lossy().to_string())
+}
+
+/// 휴지통으로 보낸다. 되돌릴 수 없는 완전 삭제는 하지 않는다.
+#[tauri::command]
+fn delete_path(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Err(format!("찾을 수 없습니다: {}", path));
+    }
+    trash::delete(&p).map_err(|e| format!("휴지통으로 보내지 못했습니다: {}", e))
+}
+
+/// 탐색기에서 해당 항목을 선택한 상태로 연다.
+#[tauri::command]
+fn reveal_path(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Err(format!("찾을 수 없습니다: {}", path));
+    }
+    // explorer 는 성공해도 0 이 아닌 값을 돌려주므로 종료 코드를 보지 않는다.
+    std::process::Command::new("explorer")
+        .arg(format!("/select,{}", p.display()))
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("탐색기를 열지 못했습니다: {}", e))
+}
+
 /// 윈도우에서 파일 이름으로 쓸 수 없는 문자와 예약된 이름을 걸러 준다.
 #[tauri::command]
 fn safe_file_name(name: String) -> String {
@@ -184,6 +285,11 @@ pub fn run() {
             read_note,
             write_note,
             create_folder,
+            create_note,
+            create_subfolder,
+            rename_path,
+            delete_path,
+            reveal_path,
             safe_file_name,
             read_config,
             write_config
