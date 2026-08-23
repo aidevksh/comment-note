@@ -35,3 +35,23 @@ jobs:
 
       - name: cargo build
         run: cargo build --manifest-path src-tauri/Cargo.toml
+
+      # 의존성 잠금 파일을 받아 저장소에 커밋하기 위해 올려 둔다
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cargo-lock
+          path: src-tauri/Cargo.lock
+          if-no-files-found: error
+
+  licenses:
+    name: 라이선스 확인 (GPL 계열 차단)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: cargo-deny
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check licenses
+          manifest-path: src-tauri/Cargo.toml
+          log-level: warn
