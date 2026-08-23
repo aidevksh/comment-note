@@ -1,0 +1,37 @@
+name: ci
+
+# main 에 올라오는 코드가 실제로 컴파일되는지만 확인한다.
+# 번들(설치 파일)은 만들지 않아 릴리스보다 빠르다.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "mockup/**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Windows 빌드 확인
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - run: npm ci
+
+      - name: cargo build
+        run: cargo build --manifest-path src-tauri/Cargo.toml

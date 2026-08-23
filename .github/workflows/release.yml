@@ -1,0 +1,73 @@
+name: release
+
+# v* 태그를 올리면 윈도우 설치 파일과 포터블 exe 를 만들어 릴리스에 붙인다.
+# 수동으로 돌릴 때는 Actions 탭에서 태그 이름을 넣어 실행한다.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "릴리스 태그 (예: v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows 설치 파일 만들기
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - run: npm ci
+
+      - name: 빌드 + 릴리스 만들기
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ inputs.version || github.ref_name }}
+          releaseName: Comment Note ${{ inputs.version || github.ref_name }}
+          releaseBody: |
+            본문을 고치지 않고 본문에 말을 붙여 두는 마크다운 메모장.
+
+            ### 받는 방법
+
+            | 파일 | 설명 |
+            |---|---|
+            | `Comment.Note_*_x64-setup.exe` | 설치 파일 (현재 사용자에게만 설치) |
+            | `Comment-Note_*_portable.exe` | 설치 없이 실행. exe 옆에 `config.json` 을 두면 설정도 그 옆에 저장된다 |
+
+            Windows 10/11. WebView2 는 대부분 이미 설치되어 있고, 없으면 설치 파일이 받아 온다.
+
+            > 코드 서명 인증서가 아직 없어서 처음 실행할 때 SmartScreen 경고가 뜬다.
+            > "추가 정보 → 실행"으로 넘어갈 수 있다.
+          releaseDraft: false
+          prerelease: true
+
+      - name: 포터블 exe 붙이기
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ inputs.version || github.ref_name }}"
+          $version = $tag.TrimStart("v")
+          $src = "src-tauri/target/release/comment-note.exe"
+          if (-not (Test-Path $src)) { throw "빌드 결과를 찾지 못했습니다: $src" }
+          $out = "Comment-Note_${version}_portable.exe"
+          Copy-Item $src $out
+          gh release upload $tag $out --clobber --repo $env:GITHUB_REPOSITORY
