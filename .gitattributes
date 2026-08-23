@@ -1,0 +1,5 @@
+# 저장소에는 LF 로 넣는다 (나중에 맥 지원을 붙일 때를 위해)
+* text=auto eol=lf
+
+*.png binary
+*.ico binary

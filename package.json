@@ -1,0 +1,15 @@
+{
+  "name": "comment-note",
+  "version": "0.1.0",
+  "private": true,
+  "description": "주석을 달 수 있는 마크다운 메모장 (윈도우)",
+  "license": "MIT",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.1.0"
+  }
+}
