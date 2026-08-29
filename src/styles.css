@@ -228,6 +228,23 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .anno{background:var(--accent-wash);border-bottom:1.5px solid var(--accent-line);
   border-radius:2px 2px 0 0;cursor:pointer;transition:background .12s}
 .anno:hover,.anno.active{background:var(--accent-wash-hi)}
+
+/* 각주 번호. 문서 글자가 아니라 표시라서 ::after 로 그린다 —
+   본문 텍스트에 섞이지 않으므로 파일에도, 복사한 내용에도 들어가지 않는다. */
+.anno[data-n]::after{
+  content:"[" attr(data-n) "]";
+  font-family:var(--font-mono);
+  font-size:.82em;
+  font-weight:500;
+  color:var(--accent);
+  border-bottom:1px solid var(--accent);
+  margin-left:.05em;
+  padding:0 .04em;
+  cursor:pointer;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.anno.active[data-n]::after{font-weight:600}
 .anno.flash{animation:flash 1s ease}
 @keyframes flash{
   0%,100%{background:var(--accent-wash);box-shadow:none}

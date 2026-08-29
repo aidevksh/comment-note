@@ -453,6 +453,7 @@ function renderShelf(){
     card.appendChild(num); card.appendChild(mid); card.appendChild(del);
     shelfList.appendChild(card);
   });
+  stampRefs();
   shelfEmpty.hidden = list.length > 0;
   shelfCount.textContent = list.length;
   $("annoCount").querySelector(".n").textContent = list.length;
@@ -555,6 +556,23 @@ function renderTree(){
       }
     });
   })(TREE, 0);
+}
+/* 각주 번호를 매긴다. 하단 목록의 카드 번호와 같은 숫자다.
+   한 주석이 여러 줄이나 여러 셀에 걸쳐 있으면 마지막 조각에만 붙인다. */
+function stampRefs(){
+  var order = {};
+  state.note.annos.forEach(function(a, i){
+    if(!a.gone) order[a.id] = i + 1;
+  });
+  [src, doc].forEach(function(root){
+    [].forEach.call(root.querySelectorAll(".anno[data-n]"), function(el){
+      el.removeAttribute("data-n");
+    });
+    Object.keys(order).forEach(function(id){
+      var els = root.querySelectorAll('[data-anno="' + id + '"]');
+      if(els.length) els[els.length - 1].setAttribute("data-n", order[id]);
+    });
+  });
 }
 function updatePath(){
   var n = state.note;
@@ -973,9 +991,24 @@ function focusAnno(id, quiet){
   [].forEach.call(document.querySelectorAll(".anno"), function(el){
     el.classList.toggle("active", el.getAttribute("data-anno") === id);
   });
+  var card = null;
   [].forEach.call(shelfList.children, function(c){
-    c.classList.toggle("active", c.getAttribute("data-anno-card") === id);
+    var on = c.getAttribute("data-anno-card") === id;
+    c.classList.toggle("active", on);
+    if(on) card = c;
   });
+  /* 각주 번호를 눌렀으면 아래 목록에서도 그 카드가 보여야 한다 */
+  if(card){
+    if(shelf.classList.contains("collapsed")){
+      shelf.classList.remove("collapsed");
+      $("shelfToggle").setAttribute("aria-expanded", "true");
+      $("shelfToggleLabel").textContent = "접기";
+    }
+    var cr = card.getBoundingClientRect(), lr = shelfList.getBoundingClientRect();
+    if(cr.top < lr.top || cr.bottom > lr.bottom){
+      shelfList.scrollTop += (cr.top - lr.top) - 8;
+    }
+  }
   if(a && a.gone){
     if(!quiet) showToast("이 주석이 가리키던 구간이 본문에 없습니다. 지우거나 그대로 둘 수 있습니다.");
     return;
