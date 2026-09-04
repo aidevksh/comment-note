@@ -117,10 +117,13 @@ UI 와 주석 엔진은 브라우저 헤드리스 테스트로 검증했다.
 
 | 운영체제 | 파일 | 처음 열 때 |
 |---|---|---|
-| **맥** (11+, 인텔·애플 실리콘) | `Comment.Note_*_x64.dmg` / `*_aarch64.dmg` | 서명이 없어서 그냥 열면 막힌다. **앱을 우클릭 → 열기 → 다시 열기**. 그래도 "손상되었다"고 하면 터미널에서 `xattr -dr com.apple.quarantine "/Applications/Comment Note.app"` |
+| **맥** (10.15+) | `Comment.Note_*_universal.dmg` | 서명이 없어서 그냥 열면 막힌다. **앱을 우클릭 → 열기 → 다시 열기**. 그래도 "손상되었다"고 하면 터미널에서 `xattr -dr com.apple.quarantine "/Applications/Comment Note.app"` |
 | **윈도우** (10/11) | `Comment.Note_*_x64-setup.exe` | SmartScreen 경고가 뜨면 **추가 정보 → 실행** |
 
-칩에 맞는 `.dmg` 를 받는다. 애플 실리콘(M1 이상)은 `aarch64`, 인텔 맥은 `x64`.
+맥은 인텔과 애플 실리콘이 한 파일이다 (universal). 칩을 따질 필요가 없다.
+
+윈도우 설치 파일은 아직 릴리스에 붙어 있지 않다. 사람이 윈도우에서 눌러 본 검증이 없어서,
+확인한 사람이 Actions 탭의 release 를 `platforms: windows` 로 직접 돌려야 붙는다.
 
 ### 직접 빌드하기
 
@@ -147,11 +150,11 @@ src-tauri/target/release/bundle/
 └─ macos/    맥 앱 번들 (.app)
 ```
 
-맥에서 다른 칩을 겨냥하려면 대상을 지정한다.
+맥에서 두 칩을 한 파일로 묶으려면 (릴리스가 이렇게 만든다):
 
 ```bash
 rustup target add aarch64-apple-darwin x86_64-apple-darwin
-npm run build -- --target aarch64-apple-darwin
+npm run build -- --target universal-apple-darwin
 ```
 
 ### UI만 먼저 보고 싶다면
