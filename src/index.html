@@ -14,41 +14,41 @@
 <div class="app">
 
   <div class="toolbar">
-    <button type="button" class="tbtn" id="railToggle" title="노트 목록 (Ctrl+Alt+B)" aria-label="노트 목록 접기">
+    <button type="button" class="tbtn" id="railToggle" data-i18n-title="tb.rail.title" data-i18n-aria="tb.rail.aria">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
         <path d="M4 6h16M4 12h16M4 18h16"></path>
       </svg>
     </button>
     <div class="vr"></div>
 
-    <button type="button" class="tbtn bold" data-fmt="bold" title="굵게 (Ctrl+B)">B</button>
-    <button type="button" class="tbtn ital" data-fmt="italic" title="기울임 (Ctrl+I)">I</button>
-    <button type="button" class="tbtn mono" data-fmt="h1" title="제목 1">H1</button>
-    <button type="button" class="tbtn mono" data-fmt="h2" title="제목 2">H2</button>
-    <button type="button" class="tbtn" data-fmt="ul" title="목록">
+    <button type="button" class="tbtn bold" data-fmt="bold" data-i18n-title="tb.bold">B</button>
+    <button type="button" class="tbtn ital" data-fmt="italic" data-i18n-title="tb.italic">I</button>
+    <button type="button" class="tbtn mono" data-fmt="h1" data-i18n-title="tb.h1">H1</button>
+    <button type="button" class="tbtn mono" data-fmt="h2" data-i18n-title="tb.h2">H2</button>
+    <button type="button" class="tbtn" data-fmt="ul" data-i18n-title="tb.ul">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
         <path d="M9 6h11M9 12h11M9 18h11"></path><circle cx="4.5" cy="6" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4.5" cy="12" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="4.5" cy="18" r="1.2" fill="currentColor" stroke="none"></circle>
       </svg>
     </button>
-    <button type="button" class="tbtn" data-fmt="quote" title="인용">
+    <button type="button" class="tbtn" data-fmt="quote" data-i18n-title="tb.quote">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
         <path d="M5 5v14"></path><path d="M10 8h9M10 13h6"></path>
       </svg>
     </button>
-    <button type="button" class="tbtn mono" data-fmt="code" title="코드">&lt;/&gt;</button>
-    <button type="button" class="tbtn" data-fmt="link" title="링크 (Ctrl+K)">
+    <button type="button" class="tbtn mono" data-fmt="code" data-i18n-title="tb.code">&lt;/&gt;</button>
+    <button type="button" class="tbtn" data-fmt="link" data-i18n-title="tb.link">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M10 13a4 4 0 0 0 5.7 0l2.6-2.6a4 4 0 0 0-5.7-5.7L11.5 6"></path>
         <path d="M14 11a4 4 0 0 0-5.7 0l-2.6 2.6a4 4 0 0 0 5.7 5.7L12.5 18"></path>
       </svg>
     </button>
-    <button type="button" class="tbtn" data-fmt="image" title="이미지 넣기">
+    <button type="button" class="tbtn" data-fmt="image" data-i18n-title="tb.image">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="3" y="4.5" width="18" height="15" rx="2"></rect><circle cx="8.5" cy="9.5" r="1.6"></circle><path d="M3.5 17l5-5 4 4 3-2.5 5 4.5"></path>
       </svg>
     </button>
     <div class="vr"></div>
-    <button type="button" class="tbtn accent" id="annoBtn" title="선택 구간에 주석 달기 (Ctrl+Alt+M)">
+    <button type="button" class="tbtn accent" id="annoBtn" data-i18n-title="tb.annotate">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M4 5h16v10H9l-5 4z"></path><path d="M12 8v4M10 10h4"></path>
       </svg>
@@ -56,60 +56,67 @@
 
     <div class="tb-spacer"></div>
 
-    <span class="anno-count" id="annoCount" title="이 노트의 주석 수">
+    <span class="anno-count" id="annoCount" data-i18n-title="tb.annoCount.title">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M4 5h16v10H9l-5 4z"></path>
       </svg>
-      주석 <span class="n">0</span>
+      <span data-i18n="tb.annoCount.label">주석</span> <span class="n">0</span>
     </span>
     <div class="vr"></div>
 
-    <span class="seg-label">편집</span>
-    <div class="seg" id="modeSeg" role="group" aria-label="편집 방식">
-      <button type="button" data-mode="md" aria-pressed="true" title="마크다운 원문 + 미리보기 (Ctrl+Alt+P)">
+    <span class="seg-label" data-i18n="tb.edit">편집</span>
+    <div class="seg" id="modeSeg" role="group" data-i18n-aria="tb.mode.aria">
+      <button type="button" data-mode="md" aria-pressed="true" data-i18n-title="tb.mode.md.title">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M12 5v14"></path>
-        </svg>마크다운
+        </svg><span data-i18n="tb.mode.md">마크다운</span>
       </button>
-      <button type="button" data-mode="wysiwyg" aria-pressed="false" title="본문을 그대로 편집 (Ctrl+Alt+P)">
+      <button type="button" data-mode="wysiwyg" aria-pressed="false" data-i18n-title="tb.mode.wysiwyg.title">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M4 20h16"></path><path d="M14.5 4.5l3 3L8 17H5v-3z"></path>
-        </svg>위지윅
+        </svg><span data-i18n="tb.mode.wysiwyg">위지윅</span>
       </button>
     </div>
     <div class="vr"></div>
 
-    <span class="seg-label">테마</span>
-    <div class="seg" id="themeSeg" role="group" aria-label="테마">
-      <button type="button" data-theme-set="system" aria-pressed="true" title="시스템 설정 따라가기">
+    <span class="seg-label" data-i18n="tb.theme">테마</span>
+    <div class="seg" id="themeSeg" role="group" data-i18n-aria="tb.theme.aria">
+      <button type="button" data-theme-set="system" aria-pressed="true" data-i18n-title="tb.theme.system.title">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <rect x="3" y="4" width="18" height="12" rx="1.6"></rect><path d="M8 20h8"></path>
-        </svg>시스템
+        </svg><span data-i18n="tb.theme.system">시스템</span>
       </button>
-      <button type="button" data-theme-set="light" aria-pressed="false" title="라이트 모드">
+      <button type="button" data-theme-set="light" aria-pressed="false" data-i18n-title="tb.theme.light.title">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
           <circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"></path>
-        </svg>라이트
+        </svg><span data-i18n="tb.theme.light">라이트</span>
       </button>
-      <button type="button" data-theme-set="dark" aria-pressed="false" title="다크 모드">
+      <button type="button" data-theme-set="dark" aria-pressed="false" data-i18n-title="tb.theme.dark.title">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"></path>
-        </svg>다크
+        </svg><span data-i18n="tb.theme.dark">다크</span>
       </button>
+    </div>
+    <div class="vr"></div>
+
+    <span class="seg-label" data-i18n="tb.lang">언어</span>
+    <div class="seg" id="langSeg" role="group" data-i18n-aria="tb.lang.aria">
+      <button type="button" data-lang="ko" aria-pressed="true" data-i18n-title="tb.lang.ko.title">한국어</button>
+      <button type="button" data-lang="en" aria-pressed="false" data-i18n-title="tb.lang.en.title">English</button>
     </div>
   </div>
 
   <div class="body">
     <aside class="rail" id="rail">
       <div class="rail-head">
-        <h2>노트</h2>
+        <h2 data-i18n="rail.title">노트</h2>
         <div class="rail-acts">
-          <button type="button" id="newNote" title="새 노트 (Ctrl+N)" aria-label="새 노트">
+          <button type="button" id="newNote" data-i18n-title="rail.newNote.title" data-i18n-aria="rail.newNote.aria">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M12 11.5v5M9.5 14h5"></path>
             </svg>
           </button>
-          <button type="button" id="newFolder" title="새 폴더" aria-label="새 폴더">
+          <button type="button" id="newFolder" data-i18n-title="rail.newFolder" data-i18n-aria="rail.newFolder">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h7A1.5 1.5 0 0 1 19 10v7.5A1.5 1.5 0 0 1 17.5 19h-13A1.5 1.5 0 0 1 3 17.5z"></path><path d="M11 13.5h4M13 11.5v4"></path>
             </svg>
@@ -118,39 +125,39 @@
       </div>
 
       <div class="rail-loc">
-        <button type="button" class="loc" id="locBtn" title="메모를 저장할 폴더 (Ctrl+Shift+O)">
+        <button type="button" class="loc" id="locBtn" data-i18n-title="rail.loc.title">
           <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h7A1.5 1.5 0 0 1 19 10v7.5A1.5 1.5 0 0 1 17.5 19h-13A1.5 1.5 0 0 1 3 17.5z"></path>
           </svg>
-          <span class="p" id="locPath">폴더 선택…</span>
+          <span class="p" id="locPath"></span>
           <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M6 9l6 6 6-6"></path>
           </svg>
         </button>
       </div>
 
-      <div class="tree" id="tree" role="tree" aria-label="폴더와 노트"></div>
+      <div class="tree" id="tree" role="tree" data-i18n-aria="rail.tree.aria"></div>
 
       <div class="rail-empty" id="railEmpty">
-        <p>메모를 둘 폴더를 고르면 그 안의 <code>.md</code> 파일이 여기 나옵니다.</p>
-        <button type="button" class="btn fill" id="pickBtn">폴더 선택</button>
+        <p></p>
+        <button type="button" class="btn fill" id="pickBtn"></button>
       </div>
     </aside>
 
     <div class="work">
       <div class="panes" id="panes">
         <section class="pane" id="paneSrc">
-          <div class="pane-head"><span class="label">마크다운</span></div>
+          <div class="pane-head"><span class="label" data-i18n="pane.md">마크다운</span></div>
           <div class="scroll" id="srcScroll">
-            <div class="src" id="src" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="마크다운 편집"></div>
+            <div class="src" id="src" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" data-i18n-aria="pane.src.aria"></div>
           </div>
         </section>
 
-        <div class="divider" id="divider" role="separator" aria-label="패널 너비 조절"></div>
+        <div class="divider" id="divider" role="separator" data-i18n-aria="pane.divider.aria"></div>
 
         <section class="pane" id="panePrev">
           <div class="pane-head">
-            <span class="label" id="prevLabel">미리보기</span>
+            <span class="label" id="prevLabel" data-i18n="pane.preview">미리보기</span>
             <span class="hint" id="prevHint"></span>
           </div>
           <div class="scroll" id="prevScroll">
@@ -160,39 +167,37 @@
 
         <div class="pane-empty" id="paneEmpty">
           <div>
-            <p class="big">열어 둔 노트가 없습니다</p>
-            <p>왼쪽 위 <strong>새 노트</strong>로 만들거나, 목록에서 하나를 고르세요.</p>
+            <p class="big" data-i18n="pane.empty.big">열어 둔 노트가 없습니다</p>
+            <p data-i18n-html="pane.empty.sub">왼쪽 위 <strong>새 노트</strong>로 만들거나, 목록에서 하나를 고르세요.</p>
           </div>
         </div>
 
-        <div class="drop" id="drop"><span>여기에 놓으면 이미지가 들어갑니다</span></div>
+        <div class="drop" id="drop"><span data-i18n="drop">여기에 놓으면 이미지가 들어갑니다</span></div>
       </div>
 
       <div class="shelf" id="shelf">
         <div class="shelf-head">
-          <h2>주석</h2>
+          <h2 data-i18n="shelf.title">주석</h2>
           <span class="n" id="shelfCount">0</span>
           <button type="button" class="shelf-toggle" id="shelfToggle" aria-expanded="true">
-            <span id="shelfToggleLabel">접기</span>
+            <span id="shelfToggleLabel" data-i18n="shelf.collapse">접기</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M6 14l6-6 6 6"></path>
             </svg>
           </button>
         </div>
         <div class="shelf-list" id="shelfList"></div>
-        <p class="shelf-empty" id="shelfEmpty">
-          본문에서 구간을 선택하고 우클릭하거나 <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>M</kbd> 을 누르면 주석이 달립니다.
-        </p>
+        <p class="shelf-empty" id="shelfEmpty" data-i18n-html="shelf.empty"></p>
       </div>
 
       <div class="status">
         <span id="stPath"></span>
-        <span id="stChars">0자</span>
-        <span id="stWords">0단어</span>
-        <span id="stLines">0줄</span>
+        <span id="stChars"></span>
+        <span id="stWords"></span>
+        <span id="stLines"></span>
         <span class="right">
-          <span id="stAnno">주석 0</span>
-          <span class="saved"><span class="d"></span><span id="stSaved">저장 안 함</span></span>
+          <span id="stAnno"></span>
+          <span class="saved"><span class="d"></span><span id="stSaved"></span></span>
           <span>UTF-8</span>
           <span id="stMode">Markdown</span>
         </span>
@@ -201,47 +206,47 @@
   </div>
 </div>
 
-<div class="menu" id="menu" role="menu" aria-label="편집 메뉴">
+<div class="menu" id="menu" role="menu" data-i18n-aria="menu.aria">
   <button type="button" data-act="cut" role="menuitem">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="18" r="2.4"></circle><circle cx="18" cy="18" r="2.4"></circle><path d="M7.5 16L18 4M16.5 16L6 4"></path></svg>
-    잘라내기 <span class="k">Ctrl+X</span>
+    <span data-i18n="menu.cut">잘라내기</span> <span class="k" data-accel="Ctrl+X"></span>
   </button>
   <button type="button" data-act="copy" role="menuitem">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M15 6.5A2.5 2.5 0 0 0 12.5 4H6a2 2 0 0 0-2 2v6.5A2.5 2.5 0 0 0 6.5 15"></path></svg>
-    복사 <span class="k">Ctrl+C</span>
+    <span data-i18n="menu.copy">복사</span> <span class="k" data-accel="Ctrl+C"></span>
   </button>
   <hr>
   <button type="button" data-act="annotate" class="primary" role="menuitem">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v10H9l-5 4z"></path><path d="M12 8v4M10 10h4"></path></svg>
-    주석 달기 <span class="k">Ctrl+Alt+M</span>
+    <span data-i18n="menu.annotate">주석 달기</span> <span class="k" data-accel="Ctrl+Alt+M"></span>
   </button>
   <button type="button" data-act="link" role="menuitem">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.6-2.6a4 4 0 0 0-5.7-5.7L11.5 6"></path><path d="M14 11a4 4 0 0 0-5.7 0l-2.6 2.6a4 4 0 0 0 5.7 5.7L12.5 18"></path></svg>
-    링크로 만들기 <span class="k">Ctrl+K</span>
+    <span data-i18n="menu.link">링크로 만들기</span> <span class="k" data-accel="Ctrl+K"></span>
   </button>
 </div>
 
-<div class="menu" id="treeMenu" role="menu" aria-label="파일 메뉴"></div>
+<div class="menu" id="treeMenu" role="menu" data-i18n-aria="tm.aria"></div>
 
-<div class="menu" id="locMenu" role="menu" aria-label="저장 위치 선택"></div>
+<div class="menu" id="locMenu" role="menu" data-i18n-aria="loc.aria"></div>
 
-<div class="composer" id="composer" role="dialog" aria-label="주석 작성">
+<div class="composer" id="composer" role="dialog" data-i18n-aria="composer.aria">
   <div class="q" id="composerQuote"></div>
-  <textarea id="composerText" placeholder="이 구간에 남길 메모" aria-label="주석 내용"></textarea>
+  <textarea id="composerText" data-i18n-ph="composer.ph" data-i18n-aria="composer.ph"></textarea>
   <div class="row">
-    <span class="hint">Ctrl+Enter 저장</span>
-    <button type="button" class="btn" id="composerCancel">취소</button>
-    <button type="button" class="btn fill" id="composerSave">주석 달기</button>
+    <span class="hint" data-i18n="composer.hint"></span>
+    <button type="button" class="btn" id="composerCancel" data-i18n="composer.cancel">취소</button>
+    <button type="button" class="btn fill" id="composerSave" data-i18n="composer.save">주석 달기</button>
   </div>
 </div>
 
-<div class="composer namer" id="namer" role="dialog" aria-label="이름 입력">
-  <div class="ntitle" id="namerTitle">이름</div>
-  <input type="text" id="namerInput" spellcheck="false" aria-label="이름">
+<div class="composer namer" id="namer" role="dialog" data-i18n-aria="namer.aria">
+  <div class="ntitle" id="namerTitle"></div>
+  <input type="text" id="namerInput" spellcheck="false" data-i18n-aria="namer.name">
   <div class="row">
     <span class="hint" id="namerHint"></span>
-    <button type="button" class="btn" id="namerCancel">취소</button>
-    <button type="button" class="btn fill" id="namerOk">확인</button>
+    <button type="button" class="btn" id="namerCancel" data-i18n="namer.cancel">취소</button>
+    <button type="button" class="btn fill" id="namerOk"></button>
   </div>
 </div>
 
@@ -252,6 +257,7 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 <script src="bridge.js"></script>
 </body>

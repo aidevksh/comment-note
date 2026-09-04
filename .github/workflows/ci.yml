@@ -1,6 +1,6 @@
 name: ci
 
-# main 에 올라오는 코드가 실제로 컴파일되는지만 확인한다.
+# main 에 올라오는 코드가 두 운영체제에서 실제로 컴파일되는지 확인한다.
 # 번들(설치 파일)은 만들지 않아 릴리스보다 빠르다.
 
 on:
@@ -15,8 +15,16 @@ on:
 
 jobs:
   build:
-    name: Windows 빌드 확인
-    runs-on: windows-latest
+    name: ${{ matrix.label }} 빌드 확인
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: Windows
+          - os: macos-latest
+            label: macOS
     steps:
       - uses: actions/checkout@v4
 
@@ -38,6 +46,7 @@ jobs:
 
       # 의존성 잠금 파일을 받아 저장소에 커밋하기 위해 올려 둔다
       - uses: actions/upload-artifact@v4
+        if: matrix.os == 'windows-latest'
         with:
           name: cargo-lock
           path: src-tauri/Cargo.lock

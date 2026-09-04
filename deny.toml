@@ -5,8 +5,12 @@
 # 아래 allow 목록에 없는 라이선스는 전부 오류로 잡힌다 (version = 2 동작).
 
 [graph]
-# 이 앱은 윈도우만 배포한다. 리눅스/맥 전용 의존성은 그래프에서 제외한다.
-targets = ["x86_64-pc-windows-msvc"]
+# 배포하는 조합만 본다. 리눅스 전용 의존성은 그래프에서 제외한다.
+targets = [
+  "x86_64-pc-windows-msvc",
+  "aarch64-apple-darwin",
+  "x86_64-apple-darwin",
+]
 
 [licenses]
 version = 2

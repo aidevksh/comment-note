@@ -164,6 +164,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .row.file[aria-current="true"]{background:var(--surface);border-left-color:var(--accent-line);
   box-shadow:0 1px 2px rgba(0,0,0,.06);font-weight:500}
 .row.marked{background:var(--surface-3)}          /* 우클릭한 항목 */
+/* 최상위 줄 하나가 열어 둔 폴더 하나다 — 그 아래와 구분되게 둔다 */
+.row.root{font-weight:600}
+.row.root>.ico{color:var(--accent)}
+.tree>.row.root:not(:first-child){margin-top:9px}
 
 .work{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
 .panes{flex:1;display:flex;min-height:0;background:var(--surface);position:relative}
@@ -326,6 +330,20 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .menu .primary:hover:not(:disabled){background:var(--accent-soft)}
 .menu .primary:disabled,.menu .primary:disabled svg{color:var(--ink-3);font-weight:500}
 .menu hr{border:0;border-top:1px solid var(--border);margin:5px 4px}
+
+/* 열어 둔 폴더 목록 — 한 줄에 폴더 하나, 오른쪽 × 로 목록에서 내린다 */
+#locMenu{max-width:min(430px,72vw)}
+#locMenu .loc-row{display:flex;align-items:center;gap:2px}
+#locMenu .loc-row>[data-loc]{flex:1;min-width:0}
+#locMenu .loc-name{font-size:12.5px;flex:0 0 auto;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:46%}
+#locMenu .loc-full{font-family:var(--font-mono);font-size:10px;color:var(--ink-3);flex:1 1 auto;
+  min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  direction:rtl}
+#locMenu .loc-x{width:24px;height:24px;flex:0 0 24px;padding:0;display:grid;place-items:center;
+  border-radius:5px;color:var(--ink-3)}
+#locMenu .loc-x:hover{background:var(--surface-3);color:var(--danger)}
+#locMenu .loc-x svg{width:12px;height:12px;flex:0 0 12px}
 
 .composer{position:fixed;z-index:70;width:316px;background:var(--surface);
   border:1px solid var(--border-strong);border-radius:10px;box-shadow:var(--shadow-pop);padding:11px;

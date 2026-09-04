@@ -1,7 +1,10 @@
 //! Comment Note — 파일 시스템 쪽 명령
 //!
-//! 이 앱은 사용자가 고른 폴더 하나를 열고 그 안의 `.md` 파일을 그대로 다룬다.
+//! 이 앱은 사용자가 고른 폴더들을 열고 그 안의 `.md` 파일을 그대로 다룬다.
 //! 앱 전용 데이터베이스는 없다. 파일이 곧 메모다.
+//!
+//! 오류는 `"코드|자세한 내용"` 꼴로 돌려준다. 화면에 띄울 문장은
+//! 프런트엔드(i18n.js)가 코드를 보고 고른다 — 여기서 언어를 정하지 않는다.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -85,27 +88,27 @@ fn walk(dir: &Path, depth: usize) -> Vec<Entry> {
 fn list_notes(root: String) -> Result<Vec<Entry>, String> {
     let path = PathBuf::from(&root);
     if !path.is_dir() {
-        return Err(format!("폴더가 아닙니다: {}", root));
+        return Err(format!("not-a-dir|{}", root));
     }
     Ok(walk(&path, 0))
 }
 
 #[tauri::command]
 fn read_note(path: String) -> Result<String, String> {
-    fs::read_to_string(&path).map_err(|e| format!("{}: {}", path, e))
+    fs::read_to_string(&path).map_err(|e| format!("io|{}: {}", path, e))
 }
 
 #[tauri::command]
 fn write_note(path: String, contents: String) -> Result<(), String> {
     if let Some(parent) = Path::new(&path).parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("{}: {}", parent.display(), e))?;
+        fs::create_dir_all(parent).map_err(|e| format!("io|{}: {}", parent.display(), e))?;
     }
-    fs::write(&path, contents).map_err(|e| format!("{}: {}", path, e))
+    fs::write(&path, contents).map_err(|e| format!("io|{}: {}", path, e))
 }
 
 #[tauri::command]
 fn create_folder(path: String) -> Result<(), String> {
-    fs::create_dir_all(&path).map_err(|e| format!("{}: {}", path, e))
+    fs::create_dir_all(&path).map_err(|e| format!("io|{}: {}", path, e))
 }
 
 /// 폴더 안에 새 노트를 만든다. 같은 이름이 있으면 뒤에 숫자를 붙인다.
@@ -113,7 +116,7 @@ fn create_folder(path: String) -> Result<(), String> {
 #[tauri::command]
 fn create_note(dir: String, name: String) -> Result<String, String> {
     let dir_path = PathBuf::from(&dir);
-    fs::create_dir_all(&dir_path).map_err(|e| format!("{}: {}", dir, e))?;
+    fs::create_dir_all(&dir_path).map_err(|e| format!("io|{}: {}", dir, e))?;
 
     let safe = safe_file_name(name);
     let stem = safe.trim_end_matches(".md").trim_end_matches(".markdown").to_string();
@@ -123,7 +126,7 @@ fn create_note(dir: String, name: String) -> Result<String, String> {
         candidate = dir_path.join(format!("{} {}.md", stem, n));
         n += 1;
         if n > 999 {
-            return Err("같은 이름의 파일이 너무 많습니다".into());
+            return Err("too-many-files|".into());
         }
     }
     let title = candidate
@@ -132,7 +135,7 @@ fn create_note(dir: String, name: String) -> Result<String, String> {
         .unwrap_or("새 노트")
         .to_string();
     fs::write(&candidate, format!("# {}\n\n", title))
-        .map_err(|e| format!("{}: {}", candidate.display(), e))?;
+        .map_err(|e| format!("io|{}: {}", candidate.display(), e))?;
     Ok(candidate.to_string_lossy().to_string())
 }
 
@@ -147,10 +150,10 @@ fn create_subfolder(dir: String, name: String) -> Result<String, String> {
         candidate = base.join(format!("{} {}", safe, n));
         n += 1;
         if n > 999 {
-            return Err("같은 이름의 폴더가 너무 많습니다".into());
+            return Err("too-many-dirs|".into());
         }
     }
-    fs::create_dir_all(&candidate).map_err(|e| format!("{}: {}", candidate.display(), e))?;
+    fs::create_dir_all(&candidate).map_err(|e| format!("io|{}: {}", candidate.display(), e))?;
     Ok(candidate.to_string_lossy().to_string())
 }
 
@@ -160,11 +163,11 @@ fn create_subfolder(dir: String, name: String) -> Result<String, String> {
 fn rename_path(path: String, new_name: String, is_dir: bool) -> Result<String, String> {
     let from = PathBuf::from(&path);
     if !from.exists() {
-        return Err(format!("찾을 수 없습니다: {}", path));
+        return Err(format!("not-found|{}", path));
     }
     let parent = from
         .parent()
-        .ok_or_else(|| "상위 폴더를 찾을 수 없습니다".to_string())?;
+        .ok_or_else(|| "no-parent|".to_string())?;
 
     let mut safe = safe_file_name(new_name);
     if !is_dir && !(safe.to_lowercase().ends_with(".md") || safe.to_lowercase().ends_with(".markdown"))
@@ -178,9 +181,9 @@ fn rename_path(path: String, new_name: String, is_dir: bool) -> Result<String, S
         .to_string_lossy()
         .eq_ignore_ascii_case(&from.to_string_lossy());
     if to.exists() && !same {
-        return Err(format!("이미 있는 이름입니다: {}", safe));
+        return Err(format!("name-taken|{}", safe));
     }
-    fs::rename(&from, &to).map_err(|e| format!("{}: {}", path, e))?;
+    fs::rename(&from, &to).map_err(|e| format!("io|{}: {}", path, e))?;
     Ok(to.to_string_lossy().to_string())
 }
 
@@ -189,27 +192,53 @@ fn rename_path(path: String, new_name: String, is_dir: bool) -> Result<String, S
 fn delete_path(path: String) -> Result<(), String> {
     let p = PathBuf::from(&path);
     if !p.exists() {
-        return Err(format!("찾을 수 없습니다: {}", path));
+        return Err(format!("not-found|{}", path));
     }
-    trash::delete(&p).map_err(|e| format!("휴지통으로 보내지 못했습니다: {}", e))
+    trash::delete(&p).map_err(|e| format!("trash|{}", e))
 }
 
-/// 탐색기에서 해당 항목을 선택한 상태로 연다.
+/// 파일 관리자에서 해당 항목을 선택한 상태로 연다.
 #[tauri::command]
 fn reveal_path(path: String) -> Result<(), String> {
     let p = PathBuf::from(&path);
     if !p.exists() {
-        return Err(format!("찾을 수 없습니다: {}", path));
+        return Err(format!("not-found|{}", path));
     }
+    reveal(&p).map_err(|e| format!("reveal|{}", e))
+}
+
+#[cfg(target_os = "windows")]
+fn reveal(p: &Path) -> std::io::Result<()> {
     // explorer 는 성공해도 0 이 아닌 값을 돌려주므로 종료 코드를 보지 않는다.
     std::process::Command::new("explorer")
         .arg(format!("/select,{}", p.display()))
         .spawn()
         .map(|_| ())
-        .map_err(|e| format!("탐색기를 열지 못했습니다: {}", e))
 }
 
-/// 윈도우에서 파일 이름으로 쓸 수 없는 문자와 예약된 이름을 걸러 준다.
+#[cfg(target_os = "macos")]
+fn reveal(p: &Path) -> std::io::Result<()> {
+    // -R 은 파인더를 열고 그 항목을 고른 상태로 둔다.
+    std::process::Command::new("open")
+        .arg("-R")
+        .arg(p)
+        .spawn()
+        .map(|_| ())
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+fn reveal(p: &Path) -> std::io::Result<()> {
+    // 항목을 고른 채로 여는 표준 방법이 없어서 담긴 폴더를 연다.
+    let target = if p.is_dir() { p } else { p.parent().unwrap_or(p) };
+    std::process::Command::new("xdg-open")
+        .arg(target)
+        .spawn()
+        .map(|_| ())
+}
+
+/// 파일 이름으로 쓸 수 없는 문자와 예약된 이름을 걸러 준다.
+/// 윈도우 규칙이 가장 빡빡해서 어디서든 그 규칙을 쓴다 — 맥에서도
+/// 이름 안의 `:` 는 파인더가 `/` 로 보여 주므로 빼는 편이 낫다.
 #[tauri::command]
 fn safe_file_name(name: String) -> String {
     const RESERVED: [&str; 22] = [
@@ -231,7 +260,7 @@ fn safe_file_name(name: String) -> String {
         cleaned.pop();
     }
     if cleaned.is_empty() {
-        cleaned.push_str("새 노트");
+        cleaned.push_str("untitled");
     }
 
     let stem = cleaned.split('.').next().unwrap_or("").to_uppercase();
@@ -241,10 +270,12 @@ fn safe_file_name(name: String) -> String {
     cleaned
 }
 
-/// 설정 파일 경로.
-/// exe 옆에 `config.json` 이 있으면 그것을 쓴다 (USB 에 넣어 쓰는 경우).
-/// 없으면 `%APPDATA%\CommentNote\config.json`.
+/// 설정 파일 경로. 없으면 운영체제가 정한 설정 폴더 아래 `CommentNote/config.json`.
+///
+/// 윈도우에서는 exe 옆에 `config.json` 이 있으면 그것을 먼저 쓴다 (USB 에 넣어 쓰는 경우).
+/// 맥에서는 실행 파일이 `.app` 안에 있어서 그 옆에 쓰면 번들을 건드리게 되므로 하지 않는다.
 fn config_path() -> Result<PathBuf, String> {
+    #[cfg(target_os = "windows")]
     if let Ok(exe) = std::env::current_exe() {
         if let Some(dir) = exe.parent() {
             let portable = dir.join("config.json");
@@ -253,10 +284,33 @@ fn config_path() -> Result<PathBuf, String> {
             }
         }
     }
-    let base = std::env::var("APPDATA")
+    Ok(config_dir()?.join("CommentNote").join("config.json"))
+}
+
+#[cfg(target_os = "windows")]
+fn config_dir() -> Result<PathBuf, String> {
+    std::env::var("APPDATA")
         .map(PathBuf::from)
-        .map_err(|_| "APPDATA 환경 변수를 찾지 못했습니다".to_string())?;
-    Ok(base.join("CommentNote").join("config.json"))
+        .map_err(|_| "no-config-dir|".to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn config_dir() -> Result<PathBuf, String> {
+    std::env::var("HOME")
+        .map(|home| PathBuf::from(home).join("Library").join("Application Support"))
+        .map_err(|_| "no-config-dir|".to_string())
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+fn config_dir() -> Result<PathBuf, String> {
+    if let Ok(dir) = std::env::var("XDG_CONFIG_HOME") {
+        if !dir.is_empty() {
+            return Ok(PathBuf::from(dir));
+        }
+    }
+    std::env::var("HOME")
+        .map(|home| PathBuf::from(home).join(".config"))
+        .map_err(|_| "no-config-dir|".to_string())
 }
 
 #[tauri::command]
@@ -272,9 +326,9 @@ fn read_config() -> Result<String, String> {
 fn write_config(contents: String) -> Result<(), String> {
     let path = config_path()?;
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("{}: {}", parent.display(), e))?;
+        fs::create_dir_all(parent).map_err(|e| format!("io|{}: {}", parent.display(), e))?;
     }
-    fs::write(&path, contents).map_err(|e| format!("{}: {}", path.display(), e))
+    fs::write(&path, contents).map_err(|e| format!("io|{}: {}", path.display(), e))
 }
 
 pub fn run() {

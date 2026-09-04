@@ -1,7 +1,11 @@
 name: release
 
-# v* 태그를 올리면 윈도우 설치 파일과 포터블 exe 를 만들어 릴리스에 붙인다.
-# 수동으로 돌릴 때는 Actions 탭에서 태그 이름을 넣어 실행한다.
+# v* 태그를 올리면 맥 설치 파일(.dmg)을 만들어 릴리스에 붙인다.
+#
+# 윈도우는 태그만으로는 붙지 않는다. 아직 사람이 윈도우에서 눌러 본 검증이
+# 없어서, 확인한 사람이 Actions 탭에서 platforms: windows 로 직접 돌려야 한다.
+# 검증이 끝나 상시 배포로 바꿀 때는 windows job 의 if 조건에서
+# github.event_name == 'push' 를 허용하면 된다.
 
 on:
   push:
@@ -9,15 +13,85 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "릴리스 태그 (예: v0.1.0)"
+        description: "릴리스 태그 (예: v0.2.0)"
         required: true
+      platforms:
+        description: "만들 대상"
+        required: true
+        default: macos
+        type: choice
+        options:
+          - macos
+          - windows
+          - all
 
 permissions:
   contents: write
 
+env:
+  RELEASE_BODY: |
+    본문을 고치지 않고 본문에 말을 붙여 두는 마크다운 메모장.
+
+    ### 이번 버전
+
+    - **한국어 / 영어** — 툴바 오른쪽에서 바꾼다. 처음에는 시스템 언어를 따라간다
+    - **폴더를 여러 개 열어 두기** — 트리 최상위 한 줄이 열어 둔 폴더 하나다
+    - **맥 지원** — 파인더에서 보기, 설정 파일 자리까지 맥 규칙을 따른다
+
+    ### 받는 방법
+
+    | 파일 | 설명 |
+    |---|---|
+    | `Comment.Note_*_universal.dmg` | 맥용. 인텔·애플 실리콘 한 파일 |
+    | `Comment.Note_*_x64-setup.exe` | 윈도우 설치 파일 (현재 사용자에게만 설치) |
+    | `Comment-Note_*_portable.exe` | 윈도우, 설치 없이 실행 |
+
+    맥은 macOS 10.15 이상. 윈도우는 10/11, WebView2 는 대부분 이미 깔려 있고 없으면 설치 파일이 받아 온다.
+
+    > 코드 서명이 아직 없다.
+    > **맥** — 그냥 열면 막힌다. 앱을 우클릭 → 열기 → 다시 열기.
+    > **윈도우** — SmartScreen 경고에서 추가 정보 → 실행.
+
 jobs:
+  macos:
+    name: macOS 설치 파일 만들기
+    if: github.event_name == 'push' || inputs.platforms == 'macos' || inputs.platforms == 'all'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # 인텔·애플 실리콘을 한 파일로 묶으려면 두 타깃이 모두 있어야 한다
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - run: npm ci
+
+      - name: 빌드 + 릴리스 만들기
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ inputs.version || github.ref_name }}
+          releaseName: Comment Note ${{ inputs.version || github.ref_name }}
+          releaseBody: ${{ env.RELEASE_BODY }}
+          releaseDraft: false
+          prerelease: true
+          args: --target universal-apple-darwin
+
   windows:
     name: Windows 설치 파일 만들기
+    # 태그를 밀어도 자동으로 돌지 않는다 — 위 주석 참고
+    if: inputs.platforms == 'windows' || inputs.platforms == 'all'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,20 +116,7 @@ jobs:
         with:
           tagName: ${{ inputs.version || github.ref_name }}
           releaseName: Comment Note ${{ inputs.version || github.ref_name }}
-          releaseBody: |
-            본문을 고치지 않고 본문에 말을 붙여 두는 마크다운 메모장.
-
-            ### 받는 방법
-
-            | 파일 | 설명 |
-            |---|---|
-            | `Comment.Note_*_x64-setup.exe` | 설치 파일 (현재 사용자에게만 설치) |
-            | `Comment-Note_*_portable.exe` | 설치 없이 실행. exe 옆에 `config.json` 을 두면 설정도 그 옆에 저장된다 |
-
-            Windows 10/11. WebView2 는 대부분 이미 설치되어 있고, 없으면 설치 파일이 받아 온다.
-
-            > 코드 서명 인증서가 아직 없어서 처음 실행할 때 SmartScreen 경고가 뜬다.
-            > "추가 정보 → 실행"으로 넘어갈 수 있다.
+          releaseBody: ${{ env.RELEASE_BODY }}
           releaseDraft: false
           prerelease: true
 

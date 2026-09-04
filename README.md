@@ -7,7 +7,8 @@
 **본문을 고치지 않고, 본문에 말을 붙여 두는 메모장**
 
 [![License](https://img.shields.io/badge/license-MIT-C98A2B?style=flat-square)](LICENSE)
-![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-2E2C28?style=flat-square)
+![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20%C2%B7%20macOS%2010.15%2B-2E2C28?style=flat-square)
+![Language](https://img.shields.io/badge/UI-%ED%95%9C%EA%B5%AD%EC%96%B4%20%C2%B7%20English-2E2C28?style=flat-square)
 ![Tauri](https://img.shields.io/badge/Tauri-2-C98A2B?style=flat-square)
 ![Status](https://img.shields.io/badge/status-개발%20중-8C877F?style=flat-square)
 
@@ -54,32 +55,37 @@
 | | |
 |---|---|
 | **편집 방식 두 개** | 마크다운 원문 + 실시간 미리보기 / 위지윅. 두 방식은 서로 되돌아온다 (위지윅에서 고친 내용과 새로 단 주석이 마크다운 원문에 그대로 남는다) |
-| **저장 위치를 고른다** | 폴더 하나를 열고 그 안의 `.md` 파일을 그대로 다룬다. 앱 전용 데이터베이스는 없다. 처음 실행하면 아무 폴더도 열려 있지 않다 |
-| **폴더 트리** | 고른 폴더의 구조를 그대로 보여준다. 파일마다 주석 개수가 붙는다 |
+| **저장 위치를 고른다** | 폴더를 열고 그 안의 `.md` 파일을 그대로 다룬다. 앱 전용 데이터베이스는 없다. 처음 실행하면 아무 폴더도 열려 있지 않다 |
+| **폴더를 여러 개 열어 둔다** | 일하는 폴더와 개인 메모 폴더를 같이 띄워 둘 수 있다. 왼쪽 트리의 최상위 줄 하나가 열어 둔 폴더 하나다. 폴더 버튼을 누르면 목록이 나오고, 옆의 × 로 목록에서 내린다 (디스크의 폴더는 그대로 있다) |
+| **폴더 트리** | 열어 둔 폴더의 구조를 그대로 보여준다. 파일마다 주석 개수가 붙는다 |
+| **한국어 / 영어** | 툴바 오른쪽에서 바꾼다. 처음에는 시스템 언어를 따라가고, 고른 뒤에는 그것을 기억한다 |
 | **파일 다루기** | 새 노트 · 새 폴더는 왼쪽 위 버튼. 파일이나 폴더를 우클릭하면 이름 바꾸기, 삭제, 탐색기에서 보기, 경로 복사 |
 | **삭제는 휴지통으로** | 완전 삭제하지 않는다. 잘못 지워도 되돌릴 수 있다 |
 | **자동 저장** | 편집이 멈추면 0.7초 뒤에 파일에 쓴다. `Ctrl+S` 는 즉시 |
 | **이미지** | 붙여넣기(`Ctrl+V`), 드래그 앤 드롭 |
 | **테마** | 라이트 / 다크 / 시스템 |
+| **윈도우와 맥** | 같은 코드로 둘 다 만든다. 파일 관리자에서 보기, 설정 파일 자리처럼 운영체제마다 다른 부분만 갈라져 있다 |
 
 ### 단축키
 
-| 동작 | 키 |
-|---|---|
-| 주석 달기 | `Ctrl+Alt+M` |
-| 편집 방식 전환 | `Ctrl+Alt+P` |
-| 테마 전환 | `Ctrl+Alt+T` |
-| 폴더 트리 접기 | `Ctrl+Alt+B` |
-| 새 노트 | `Ctrl+N` |
-| 저장 위치 바꾸기 | `Ctrl+Shift+O` |
-| 저장 | `Ctrl+S` |
+| 동작 | 윈도우 | 맥 |
+|---|---|---|
+| 주석 달기 | `Ctrl+Alt+M` | `⌘⌥M` |
+| 편집 방식 전환 | `Ctrl+Alt+P` | `⌘⌥P` |
+| 테마 전환 | `Ctrl+Alt+T` | `⌘⌥T` |
+| 폴더 트리 접기 | `Ctrl+Alt+B` | `⌘⌥B` |
+| 새 노트 | `Ctrl+N` | `⌘N` |
+| 열어 둔 폴더 목록 | `Ctrl+Shift+O` | `⌘⇧O` |
+| 저장 | `Ctrl+S` | `⌘S` |
+
+화면에 뜨는 단축키 표기도 운영체제에 맞춰 바뀐다.
 
 <br>
 
 ## 지금 상태
 
-UI 와 주석 엔진은 브라우저 헤드리스 테스트 52개로 검증했다.
-파일 시스템 쪽은 CI 에서 컴파일까지 확인했고, 사람이 실제로 눌러 본 검증은 아직 없다.
+UI 와 주석 엔진은 브라우저 헤드리스 테스트로 검증했다.
+맥에서는 사람이 실제로 눌러 확인했고, 윈도우는 CI 에서 컴파일까지만 확인했다.
 
 - [x] 주석 엔진 — 문자 오프셋 기반, 세 화면 동기화, 고아 주석 처리
 - [x] 마크다운 렌더러 (제목·목록·표·인용·코드펜스·이미지·링크)
@@ -87,32 +93,65 @@ UI 와 주석 엔진은 브라우저 헤드리스 테스트 52개로 검증했�
 - [x] 폴더 열기 · 폴더 트리 · 자동 저장
 - [x] 새 노트 / 새 폴더 / 이름 바꾸기 / 삭제(휴지통) / 탐색기에서 보기
 - [x] 라이트 / 다크 / 시스템 테마
-- [ ] **실기 확인** — 폴더를 열고 저장·삭제까지 사람이 눌러 보는 검증
+- [x] 폴더 여러 개를 동시에 열어 두기
+- [x] 한국어 / 영어
+- [x] 맥 지원 (`.dmg`) — 파인더에서 보기, 설정 자리까지 맥 규칙을 따른다
+- [x] **맥 실기 확인** — 폴더를 열고 주석·저장·삭제까지 눌러 봤다
+- [ ] **윈도우 실기 확인** — 컴파일만 확인했다. 사람이 눌러 본 검증은 아직 없다
 - [ ] 주석을 파일에 저장 — 아래 설계 확정 필요. 지금은 주석이 앱을 닫으면 사라진다
 - [ ] 파일 감시 (외부에서 파일이 바뀌면 갱신, 동기화 폴더 중복 이벤트 디바운스)
 - [ ] 한 구간에 주석이 겹칠 때의 표시
 - [ ] 편집기 코어를 ProseMirror 로 교체 (지금은 `contenteditable` 직접 제어)
 - [ ] 폰트 번들 (지금은 Google Fonts 를 네트워크로 받는다 → 오프라인에서 대체 폰트)
-- [ ] 코드 서명, 자동 업데이트
-- [ ] 맥 지원
+- [ ] 코드 서명, 공증, 자동 업데이트 — 지금은 두 운영체제 모두 서명이 없다
+- [ ] 구간이 `**굵게**` 안에서 시작해 밖에서 끝날 때, 미리보기의 표시가 짧게 잘린다
+      (주석 자체와 원문 쪽 표시는 멀쩡하다)
 
 <br>
 
 ## 시작하기
 
-### 필요한 것
+### 받아서 쓰기
+
+[릴리스](https://github.com/aidevksh/comment-note/releases)에서 받는다.
+
+| 운영체제 | 파일 | 처음 열 때 |
+|---|---|---|
+| **맥** (11+, 인텔·애플 실리콘) | `Comment.Note_*_x64.dmg` / `*_aarch64.dmg` | 서명이 없어서 그냥 열면 막힌다. **앱을 우클릭 → 열기 → 다시 열기**. 그래도 "손상되었다"고 하면 터미널에서 `xattr -dr com.apple.quarantine "/Applications/Comment Note.app"` |
+| **윈도우** (10/11) | `Comment.Note_*_x64-setup.exe` | SmartScreen 경고가 뜨면 **추가 정보 → 실행** |
+
+칩에 맞는 `.dmg` 를 받는다. 애플 실리콘(M1 이상)은 `aarch64`, 인텔 맥은 `x64`.
+
+### 직접 빌드하기
 
 | | |
 |---|---|
 | [Node.js](https://nodejs.org) 18+ | Tauri CLI 실행용 |
 | [Rust](https://rustup.rs) 1.77+ | 앱 본체 빌드 |
-| [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) | "C++를 사용한 데스크톱 개발" 워크로드 |
-| WebView2 | Windows 10/11에 기본 탑재 |
+| **윈도우** — [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) | "C++를 사용한 데스크톱 개발" 워크로드 |
+| **윈도우** — WebView2 | Windows 10/11에 기본 탑재 |
+| **맥** — Xcode Command Line Tools | `xcode-select --install` |
 
 ```bash
 npm install
 npm run dev      # 개발 모드로 앱 실행
-npm run build    # 설치 파일 만들기 (src-tauri/target/release/bundle/nsis)
+npm run build    # 설치 파일 만들기
+```
+
+만들어지는 자리:
+
+```
+src-tauri/target/release/bundle/
+├─ nsis/     윈도우 설치 파일 (.exe)
+├─ dmg/      맥 디스크 이미지 (.dmg)
+└─ macos/    맥 앱 번들 (.app)
+```
+
+맥에서 다른 칩을 겨냥하려면 대상을 지정한다.
+
+```bash
+rustup target add aarch64-apple-darwin x86_64-apple-darwin
+npm run build -- --target aarch64-apple-darwin
 ```
 
 ### UI만 먼저 보고 싶다면
@@ -129,6 +168,7 @@ comment-note/
 ├─ src/                    프론트엔드 (빌드 단계 없는 정적 파일)
 │  ├─ index.html
 │  ├─ styles.css           디자인 토큰 + 3중 테마 (라이트/다크/시스템)
+│  ├─ i18n.js              한국어 / 영어 문구, 단축키 표기 (맥은 ⌘⌥)
 │  ├─ app.js               주석 엔진, 마크다운 렌더러, 직렬화기, UI
 │  └─ bridge.js            앱 셸 연결 — 브라우저에서는 아무것도 하지 않는다
 ├─ src-tauri/
