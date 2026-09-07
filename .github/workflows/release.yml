@@ -1,11 +1,10 @@
 name: release
 
-# v* 태그를 올리면 맥 설치 파일(.dmg)을 만들어 릴리스에 붙인다.
+# v* 태그를 올리면 맥 설치 파일(.dmg)과 윈도우 설치 파일(.exe · 포터블 exe)을
+# 만들어 릴리스에 붙인다.
 #
-# 윈도우는 태그만으로는 붙지 않는다. 아직 사람이 윈도우에서 눌러 본 검증이
-# 없어서, 확인한 사람이 Actions 탭에서 platforms: windows 로 직접 돌려야 한다.
-# 검증이 끝나 상시 배포로 바꿀 때는 windows job 의 if 조건에서
-# github.event_name == 'push' 를 허용하면 된다.
+# v0.2.0 에서 두 운영체제 모두 실기에서 눌러 확인한 뒤 윈도우도 태그에 태웠다.
+# 한쪽만 다시 만들려면 Actions 탭에서 platforms 를 골라 직접 돌린다.
 
 on:
   push:
@@ -90,8 +89,12 @@ jobs:
 
   windows:
     name: Windows 설치 파일 만들기
-    # 태그를 밀어도 자동으로 돌지 않는다 — 위 주석 참고
-    if: inputs.platforms == 'windows' || inputs.platforms == 'all'
+    # 두 job 이 같은 릴리스를 동시에 만들려 다투지 않도록 맥 다음에 붙는다.
+    # macos 가 건너뛰어졌거나 실패해도(!cancelled) 윈도우는 그대로 만든다.
+    needs: macos
+    if: >-
+      !cancelled() &&
+      (github.event_name == 'push' || inputs.platforms == 'windows' || inputs.platforms == 'all')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
