@@ -9,12 +9,16 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use base64::engine::general_purpose::STANDARD as BASE64;
+use base64::Engine as _;
 use serde::Serialize;
 
 /// 한 번에 읽어 들이는 최대 깊이. 이보다 깊은 폴더는 접어 둔다.
 const MAX_DEPTH: usize = 8;
 /// 노트 하나의 상한. 이보다 큰 파일은 목록에만 두고 내용을 읽지 않는다.
 const MAX_BYTES: u64 = 4 * 1024 * 1024;
+/// 붙여 넣은 그림을 두는 폴더 이름. 노트와 같은 폴더 안에 만든다.
+const ASSET_DIR: &str = "assets";
 
 /// 폴더 트리의 한 항목. `kind` 가 `"dir"` 이면 `children`, `"file"` 이면 `text` 를 본다.
 #[derive(Serialize)]
@@ -155,6 +159,81 @@ fn create_subfolder(dir: String, name: String) -> Result<String, String> {
     }
     fs::create_dir_all(&candidate).map_err(|e| format!("io|{}: {}", candidate.display(), e))?;
     Ok(candidate.to_string_lossy().to_string())
+}
+
+/// 붙여 넣거나 끌어다 놓은 그림을 노트와 같은 폴더의 `assets` 안에 저장하고,
+/// 노트를 기준으로 한 상대 경로를 돌려준다. 마크다운에는 이 상대 경로가 들어가므로
+/// 앱을 껐다 켜도, 폴더째 옮겨도 그림이 그대로 남는다.
+///
+/// `data` 는 base64 로 담긴 그림의 바이트다.
+#[tauri::command]
+fn save_asset(note_path: String, name: String, data: String) -> Result<String, String> {
+    let note = PathBuf::from(&note_path);
+    let dir = note.parent().ok_or_else(|| "no-parent|".to_string())?;
+    let assets = dir.join(ASSET_DIR);
+    fs::create_dir_all(&assets).map_err(|e| format!("io|{}: {}", assets.display(), e))?;
+
+    let bytes = BASE64
+        .decode(data.as_bytes())
+        .map_err(|e| format!("bad-image|{}", e))?;
+    if bytes.is_empty() {
+        return Err("bad-image|0 bytes".into());
+    }
+
+    let (stem, ext) = split_name(&name);
+    let mut file_name = format!("{}{}", stem, ext);
+    let mut n = 2;
+    while assets.join(&file_name).exists() {
+        file_name = format!("{}-{}{}", stem, n, ext);
+        n += 1;
+        if n > 999 {
+            return Err("too-many-files|".into());
+        }
+    }
+
+    let target = assets.join(&file_name);
+    fs::write(&target, bytes).map_err(|e| format!("io|{}: {}", target.display(), e))?;
+    // 마크다운 경로는 어느 운영체제에서나 `/` 를 쓴다.
+    Ok(format!("{}/{}", ASSET_DIR, file_name))
+}
+
+/// 그림 파일 이름을 몸통과 확장자로 나눈다. 클립보드에서 온 그림은 이름이 없거나
+/// `image.png` 처럼 뭉뚱그려져 있어서, 비어 있으면 적당한 이름을 대신 쓴다.
+fn split_name(name: &str) -> (String, String) {
+    let safe = safe_file_name(name.to_string());
+    let p = Path::new(&safe);
+
+    let ext = p
+        .extension()
+        .and_then(|e| e.to_str())
+        .filter(|e| e.len() <= 5 && e.chars().all(|c| c.is_ascii_alphanumeric()))
+        .map(|e| format!(".{}", e.to_lowercase()))
+        .unwrap_or_else(|| ".png".to_string());
+
+    let raw = p.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+    let stem = link_safe(raw);
+    let stem = if stem.is_empty() || stem == "untitled" {
+        "image".to_string()
+    } else {
+        stem
+    };
+
+    (stem, ext)
+}
+
+/// 마크다운의 `![](...)` 안에 그대로 들어갈 수 있게 이름을 다듬는다.
+/// 공백과 괄호가 들어 있으면 링크가 거기서 끊긴다. 글자와 숫자는 언어를 가리지
+/// 않고 그대로 두고 — 한글 이름도 링크에서 멀쩡하다 — 나머지는 `-` 로 바꾼다.
+fn link_safe(name: &str) -> String {
+    let mut out = String::new();
+    for c in name.chars() {
+        if c.is_alphanumeric() || c == '-' || c == '_' || c == '.' {
+            out.push(c);
+        } else if !out.ends_with('-') {
+            out.push('-');
+        }
+    }
+    out.trim_matches(|c| c == '-' || c == '.').to_string()
 }
 
 /// 이름을 바꾼다. 같은 폴더 안에서만 움직이고, 이미 있는 이름으로는 바꾸지 않는다.
@@ -344,6 +423,7 @@ pub fn run() {
             rename_path,
             delete_path,
             reveal_path,
+            save_asset,
             safe_file_name,
             read_config,
             write_config

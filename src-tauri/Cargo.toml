@@ -1,6 +1,6 @@
 [package]
 name = "comment-note"
-version = "0.2.0"
+version = "0.2.1"
 description = "주석을 달 수 있는 마크다운 메모장"
 authors = ["aidevksh"]
 license = "MIT"
@@ -20,6 +20,8 @@ tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# 붙여 넣은 그림은 base64 로 건너와서 파일로 저장된다
+base64 = "0.22"
 # 삭제는 완전 삭제가 아니라 휴지통으로 보낸다
 trash = "5"
 

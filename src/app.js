@@ -19,6 +19,7 @@ var RE_OPEN = new RegExp(M_OPEN + "([^" + M_SEP + "]*)" + M_SEP, "g");
 var RE_END  = new RegExp(M_END, "g");
 var RE_ANY  = new RegExp("[" + M_OPEN + M_SEP + M_END + "]", "g");
 /* 줄머리의 블록 기호 — 주석 경계는 이 뒤로 밀어 넣는다 */
+var RE_CRLF = /\r\n?/g;
 var RE_LEAD = /^[ \t]*(?:>[ \t]?)*(?:[-*+][ \t]+|\d+[.)][ \t]+|#{1,6}[ \t]+)?/;
 
 /* ── 상태: 열어 둔 폴더들과 그 안의 노트 ──────────────────────
@@ -69,7 +70,8 @@ var HOOKS = {
   onReveal:null,       /* (path) 탐색기에서 보기 */
   onCloseFolder:null,  /* (path) 열어 둔 폴더 하나를 목록에서 내리기 */
   onNoteChange:null,   /* (note) 창 제목 갱신 */
-  resolveAsset:null    /* (url) 상대 경로 이미지 해석 */
+  resolveAsset:null,   /* (url) 상대 경로 이미지 해석 */
+  saveImage:null       /* (notePath, name, base64) → Promise<노트 기준 상대 경로> */
 };
 function needsApp(){ showToast(t("msg.needsApp")); }
 
@@ -90,7 +92,8 @@ function inl(s){
   var codes = [];
   s = s.replace(/`([^`]+)`/g, function(m,c){ codes.push(c); return "@@CN-CODE-"+(codes.length-1)+"@@"; });
   s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, function(m,a,u){
-        return '<img src="'+assetUrl(bare(u))+'" alt="'+bare(a)+'">'; });
+        var raw = bare(u);
+        return '<img src="'+assetUrl(raw)+'" data-src="'+raw+'" alt="'+bare(a)+'">'; });
   s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function(m,t,u){
         return '<a href="'+bare(u)+'" target="_blank" rel="noopener noreferrer">'+t+'</a>'; });
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
@@ -324,7 +327,10 @@ function serializeDoc(root){
           if(inPre){ walk(c, inPre); } else { emit("`"); walk(c, inPre); emit("`"); }
           break;
         case "A": emit("["); walk(c, inPre); emit("](" + (c.getAttribute("href")||"") + ")"); break;
-        case "IMG": emit("![" + (c.getAttribute("alt")||"") + "](" + (c.getAttribute("src")||"") + ")"); break;
+        case "IMG":
+          emit("![" + (c.getAttribute("alt")||"") + "]("
+            + (c.getAttribute("data-src") || c.getAttribute("src") || "") + ")");
+          break;
         case "H1": case "H2": case "H3": case "H4": case "H5": case "H6":
           blank();
           emit(new Array(+tag.charAt(1) + 1).join("#") + " ");
@@ -685,18 +691,41 @@ var syncTimer = null;
 function scheduleSync(){
   clearTimeout(syncTimer);
   syncTimer = setTimeout(function(){
+    if(!state.note) return;
     syncFrom(src);
     renderInto(doc, state.text, rangesOf(state.note));
     renderShelf();
     updateStatus();
   }, 80);
 }
+/* 위지윅 편집 후: 고친 화면을 마크다운으로 되읽어 둔다.
+   여기서 읽어 둔 글이 그대로 파일에 쓰이므로, 이걸 미루면 저장할 때
+   고치기 전의 글이 쓰인다. 화면(doc)은 건드리지 않으니 커서는 그대로다. */
+var docSyncTimer = null;
+function scheduleDocSync(){
+  clearTimeout(docSyncTimer);
+  docSyncTimer = setTimeout(function(){
+    if(state.mode !== "wysiwyg" || !state.note) return;
+    syncFrom(doc);
+    renderShelf();
+    updateStatus();
+  }, 80);
+}
 
 /* ── 노트 전환 ───────────────────────────────────────────────── */
-function stash(){
+/* 지금 보고 있는 화면을 마크다운으로 곧바로 읽어 둔다.
+   미뤄 둔 읽기(scheduleSync / scheduleDocSync)를 기다리지 않아야 하는 자리 —
+   노트를 바꾸기 직전, 그리고 파일에 쓰기 직전에 부른다. */
+function syncNow(){
   if(!state.note) return;
   if(state.mode === "wysiwyg") syncFrom(doc);
   else syncFrom(src);
+}
+function stash(){
+  if(!state.note) return;
+  clearTimeout(syncTimer);
+  clearTimeout(docSyncTimer);
+  syncNow();
 }
 function loadNote(note){
   if(state.note && state.note !== note) stash();
@@ -1130,7 +1159,8 @@ function insertImage(url){
   el.focus();
   if(state.mode === "wysiwyg"){
     if(url){
-      document.execCommand("insertHTML", false, '<img src="'+url+'" alt="'+t("text.image.alt")+'">');
+      document.execCommand("insertHTML", false,
+        '<img src="'+esc(assetUrl(url))+'" data-src="'+esc(url)+'" alt="'+esc(t("text.image.alt"))+'">');
       state.wysiwygDirty = true;
     }else{
       showToast(t("msg.imagePasteHint"));
@@ -1142,6 +1172,114 @@ function insertImage(url){
     : "![" + t("text.image.desc") + "](" + t("text.image.path") + ")");
 }
 
+/* ── 붙여 넣은 그림 ──────────────────────────────────────────
+   그림은 노트 옆 assets 폴더에 진짜 파일로 저장하고, 마크다운에는 그 상대
+   경로만 적는다. 화면에만 띄우는 blob: 주소를 적으면 앱을 끄는 순간 그 주소가
+   죽어서, 다음에 열었을 때 그림이 사라진다. */
+function readBase64(file){
+  return new Promise(function(resolve, reject){
+    var r = new FileReader();
+    r.onload = function(){
+      var s = String(r.result || ""), cut = s.indexOf(",");
+      if(cut < 0) reject(new Error("read|")); else resolve(s.slice(cut + 1));
+    };
+    r.onerror = function(){ reject(r.error || new Error("read|")); };
+    r.readAsDataURL(file);
+  });
+}
+/* 저장은 비동기라 그사이 커서가 풀릴 수 있다. 넣을 자리를 붙들었다가 되돌린다. */
+function caretIn(el){
+  var sel = window.getSelection();
+  if(!sel || !sel.rangeCount) return null;
+  var r = sel.getRangeAt(0);
+  return el.contains(r.commonAncestorContainer) ? r.cloneRange() : null;
+}
+function putCaret(el, range){
+  el.focus();
+  if(!range) return;
+  var sel = window.getSelection();
+  try{ sel.removeAllRanges(); sel.addRange(range); }catch(e){}
+}
+function insertImageFile(file){
+  var el = activeEditable(), caret = caretIn(el);
+  /* 앱 셸 없이 브라우저로 그냥 열어 본 경우 — 저장할 곳이 없으니 화면에만 띄운다 */
+  if(!HOOKS.saveImage){
+    putCaret(el, caret);
+    insertImage(URL.createObjectURL(file));
+    return Promise.resolve(true);
+  }
+  var note = state.note;
+  if(!note || !note.path){ showToast(t("msg.imageNeedsNote")); return Promise.resolve(false); }
+  return readBase64(file).then(function(b64){
+    return HOOKS.saveImage(note.path, file.name || "", b64);
+  }).then(function(rel){
+    putCaret(el, caret);
+    insertImage(rel);
+    markSaved();
+    return true;
+  }).catch(function(e){
+    showToast(t("err.saveImage", {detail:I.errText(e)}));
+    return false;
+  });
+}
+/* 여러 장은 순서대로 — 이름이 겹칠 때 뒤에 붙는 번호가 꼬이지 않게 한 장씩 저장한다 */
+function insertImageFiles(files){
+  var list = [];
+  for(var i = 0; i < files.length; i++){
+    if(files[i].type && files[i].type.indexOf("image") === 0) list.push(files[i]);
+  }
+  if(!list.length){ showToast(t("msg.onlyImages")); return; }
+  var done = 0;
+  list.reduce(function(chain, f){
+    return chain.then(function(){
+      return insertImageFile(f).then(function(ok){ if(ok) done++; });
+    });
+  }, Promise.resolve()).then(function(){
+    if(done) showToast(done === 1 ? t("msg.imageInserted") : tn("msg.imagesInserted", done));
+  });
+}
+
+/* ── 붙여 넣은 글자 ──────────────────────────────────────────
+   다른 곳에서 복사해 온 글자는 그 문서의 글자색·배경색·글꼴을 함께 들고 온다.
+   마크다운에는 그런 모양을 적을 수 없어서 미리보기에는 안 나타나고 편집 화면만
+   얼룩진다. 그래서 뼈대(굵게·목록·제목 …)만 남기고 모양은 떼어 낸 뒤 넣는다. */
+var PASTE_TAGS = ("P BR DIV STRONG B EM I DEL S STRIKE MARK CODE PRE A IMG " +
+  "H1 H2 H3 H4 H5 H6 UL OL LI BLOCKQUOTE HR TABLE THEAD TBODY TR TH TD").split(" ");
+var PASTE_ATTR = { A:["href"], IMG:["src","alt","data-src"] };
+var PASTE_DROP = { SCRIPT:1, STYLE:1, META:1, LINK:1, TITLE:1, HEAD:1, NOSCRIPT:1 };
+
+function cleanHtml(html){
+  var box = document.createElement("div");
+  box.innerHTML = String(html);
+  (function walk(node){
+    for(var c = node.firstChild; c; ){
+      var next = c.nextSibling;
+      if(c.nodeType === 8){
+        c.parentNode.removeChild(c);                  /* 주석 */
+      }else if(c.nodeType === 1){
+        var tag = c.nodeName;
+        if(PASTE_DROP[tag]){
+          c.parentNode.removeChild(c);
+        }else if(PASTE_TAGS.indexOf(tag) < 0){
+          /* span·font 처럼 모양만 씌운 껍데기는 벗기고 안의 것만 남긴다 */
+          walk(c);
+          while(c.firstChild) c.parentNode.insertBefore(c.firstChild, c);
+          c.parentNode.removeChild(c);
+        }else{
+          var keep = PASTE_ATTR[tag] || [];
+          for(var i = c.attributes.length - 1; i >= 0; i--){
+            var name = c.attributes[i].name;
+            if(keep.indexOf(name) < 0) c.removeAttribute(name);
+          }
+          walk(c);
+        }
+      }
+      c = next;
+    }
+  })(box);
+  return box.innerHTML;
+}
+
 /* ── 이벤트 ──────────────────────────────────────────────────── */
 src.addEventListener("input", function(){ scheduleSync(); markSaved(); });
 src.addEventListener("keydown", function(e){
@@ -1151,7 +1289,11 @@ src.addEventListener("keydown", function(e){
   }
 });
 doc.addEventListener("input", function(){
-  if(state.mode === "wysiwyg"){ state.wysiwygDirty = true; markSaved(); }
+  if(state.mode === "wysiwyg"){
+    state.wysiwygDirty = true;
+    scheduleDocSync();
+    markSaved();
+  }
 });
 
 [src, doc].forEach(function(surface){
@@ -1162,18 +1304,36 @@ doc.addEventListener("input", function(){
     openMenu(e.clientX + 2, e.clientY + 2, currentSelection());
   });
   surface.addEventListener("paste", function(e){
-    var items = e.clipboardData && e.clipboardData.items;
-    if(!items) return;
+    var dt = e.clipboardData;
+    if(!dt) return;
+
+    /* 그림이면 파일로 저장해서 넣는다 */
+    var items = dt.items || [];
     for(var i = 0; i < items.length; i++){
-      if(items[i].type && items[i].type.indexOf("image") === 0){
+      if(items[i].kind === "file" && items[i].type && items[i].type.indexOf("image") === 0){
         var file = items[i].getAsFile();
         if(file){
           e.preventDefault();
-          insertImage(URL.createObjectURL(file));
-          showToast(t("msg.imageInserted"));
+          insertImageFile(file).then(function(ok){ if(ok) showToast(t("msg.imageInserted")); });
           return;
         }
       }
+    }
+
+    /* 글자는 원래 있던 모양을 떼고 이 노트의 서식으로 넣는다.
+       원문 패널은 마크다운 글자 그대로라 아예 맨 글자로, 위지윅은 뼈대만 남겨서. */
+    var html = dt.getData("text/html");
+    var text = dt.getData("text/plain");
+    if(surface === doc && state.mode === "wysiwyg" && html){
+      e.preventDefault();
+      document.execCommand("insertHTML", false, cleanHtml(html));
+      state.wysiwygDirty = true;
+      markSaved();
+      return;
+    }
+    if(text){
+      e.preventDefault();
+      document.execCommand("insertText", false, text.replace(RE_CRLF, "\n"));
     }
   });
 });
@@ -1565,11 +1725,7 @@ panes.addEventListener("drop", function(e){
   drop.classList.remove("open");
   var files = e.dataTransfer && e.dataTransfer.files;
   if(!files || !files.length) return;
-  var added = 0;
-  for(var i = 0; i < files.length; i++){
-    if(files[i].type.indexOf("image") === 0){ insertImage(URL.createObjectURL(files[i])); added++; }
-  }
-  showToast(added ? tn("msg.imagesInserted", added) : t("msg.onlyImages"));
+  insertImageFiles(files);
 });
 window.addEventListener("dragover", function(e){ e.preventDefault(); });
 window.addEventListener("drop", function(e){ e.preventDefault(); });
@@ -1686,7 +1842,8 @@ window.CommentNote = {
     updatePath();
     refreshEmptyStates();
   },
-  currentText:function(){ return state.text; },
+  /* 파일에 쓰기 직전에 부른다 — 아직 읽어 두지 못한 편집까지 담아서 준다 */
+  currentText:function(){ syncNow(); return state.text; },
   currentNote:function(){ return state.note; }
 };
 

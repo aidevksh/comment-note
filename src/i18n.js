@@ -180,6 +180,7 @@ ko: {
   "msg.imagesInserted":"이미지 {n}개를 넣었습니다.",
   "msg.onlyImages":"이미지 파일만 넣을 수 있습니다.",
   "msg.imagePasteHint":"이미지는 붙여넣기({{Ctrl+V}})나 드래그로 넣어 보세요.",
+  "msg.imageNeedsNote":"노트를 먼저 연 다음에 이미지를 넣을 수 있습니다.",
   "msg.badName":"이름에 \\ / : * ? \" < > | 는 쓸 수 없습니다.",
   "msg.pickFolderFirst":"먼저 메모를 둘 폴더를 고르세요.",
   "msg.pickFolderStart":"메모를 둘 폴더를 먼저 고르세요. 왼쪽 위의 폴더 선택.",
@@ -205,6 +206,7 @@ ko: {
   "err.delete":"삭제하지 못했습니다: {detail}",
   "err.reveal":"{app}에서 열지 못했습니다: {detail}",
   "err.pickFolder":"폴더를 고르지 못했습니다: {detail}",
+  "err.saveImage":"이미지를 저장하지 못했습니다: {detail}",
 
   "e.not-a-dir":"폴더가 아닙니다: {0}",
   "e.not-found":"찾을 수 없습니다: {0}",
@@ -215,6 +217,8 @@ ko: {
   "e.trash":"휴지통으로 보내지 못했습니다: {0}",
   "e.reveal":"파일 관리자를 열지 못했습니다: {0}",
   "e.no-config-dir":"설정을 둘 폴더를 찾지 못했습니다",
+  "e.bad-image":"이미지를 읽을 수 없습니다: {0}",
+  "e.read":"파일을 읽지 못했습니다",
   "e.io":"{0}"
 },
 en: {
@@ -364,6 +368,7 @@ en: {
   "msg.imagesInserted.one":"Inserted 1 image.",
   "msg.onlyImages":"Only image files can go in.",
   "msg.imagePasteHint":"Paste ({{Ctrl+V}}) or drag an image in.",
+  "msg.imageNeedsNote":"Open a note first, then put an image in.",
   "msg.badName":"A name can't contain \\ / : * ? \" < > |",
   "msg.pickFolderFirst":"Choose a folder for your notes first.",
   "msg.pickFolderStart":"Choose a folder to keep your notes in — the folder button at the top left.",
@@ -388,6 +393,7 @@ en: {
   "err.delete":"Couldn't delete: {detail}",
   "err.reveal":"Couldn't open {app}: {detail}",
   "err.pickFolder":"Couldn't choose a folder: {detail}",
+  "err.saveImage":"Couldn't save the image: {detail}",
 
   "e.not-a-dir":"Not a folder: {0}",
   "e.not-found":"Not found: {0}",
@@ -398,6 +404,8 @@ en: {
   "e.trash":"Couldn't move it to the Trash: {0}",
   "e.reveal":"Couldn't open the file manager: {0}",
   "e.no-config-dir":"Couldn't find a folder to keep settings in",
+  "e.bad-image":"Couldn't read the image: {0}",
+  "e.read":"Couldn't read the file",
   "e.io":"{0}"
 }
 };

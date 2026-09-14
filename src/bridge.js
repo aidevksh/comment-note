@@ -19,6 +19,7 @@ var CN = window.CommentNote;
 var t = CN.t, errText = CN.errText;
 var invoke = T.core.invoke;
 var openDialog = T.dialog && T.dialog.open;
+var toFileSrc = T.core.convertFileSrc;
 var appWindow = T.window && T.window.getCurrentWindow ? T.window.getCurrentWindow() : null;
 
 var SAVE_DELAY = 700;     /* 편집이 멈춘 뒤 이만큼 있다가 저장 */
@@ -278,6 +279,35 @@ CN.hooks.onNoteChange = function(note){
   if(!appWindow || !appWindow.setTitle) return;
   appWindow.setTitle(note ? (note.title + " — Comment Note") : "Comment Note")
     .catch(function(){});
+};
+
+/* ── 그림 ────────────────────────────────────────────────────
+   붙여 넣은 그림은 노트 옆 assets 폴더에 파일로 남고, 마크다운에는 그 상대
+   경로만 적힌다. 그러면 앱을 껐다 켜도, 폴더째 옮겨도 그림이 따라온다.
+   화면에 띄울 때만 그 상대 경로를 웹뷰가 읽을 수 있는 주소로 바꿔 준다. */
+CN.hooks.saveImage = function(notePath, name, base64){
+  return invoke("save_asset", { notePath:notePath, name:name, data:base64 });
+};
+
+function isAbsolute(u){
+  return /^[a-zA-Z]:[\\/]/.test(u) || u.charAt(0) === "/" || u.charAt(0) === "\\";
+}
+CN.hooks.resolveAsset = function(u){
+  if(!u || !toFileSrc) return u;
+  if(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(u)) return u;        /* http:// 같은 주소 */
+  if(/^(data|blob|mailto|asset):/i.test(u)) return u;
+  var abs = u;
+  if(!isAbsolute(u)){
+    var note = CN.currentNote();
+    if(!note || !note.path) return u;
+    var dir = note.path.slice(0, Math.max(note.path.lastIndexOf("\\"), note.path.lastIndexOf("/")));
+    if(!dir) return u;
+    var sep = dir.indexOf("\\") > -1 ? "\\" : "/";
+    var rel = u;
+    try{ rel = decodeURI(u); }catch(e){}
+    abs = dir + sep + rel.split("/").join(sep);
+  }
+  try{ return toFileSrc(abs); }catch(e){ return u; }
 };
 
 /* ── 시작 ────────────────────────────────────────────────────── */
